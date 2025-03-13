@@ -18,6 +18,7 @@ int main() {
                     switch (opcionAdmin) {
                         case '1':
                             printf("Método Ver listado de películas\n");
+                            mostrarPeliculasVideoclub(v);
                             break;
                         case '2':
                             printf("Método Ver listado de usuarios\n");
