@@ -1,11 +1,15 @@
 #include <stdio.h>
 #include "pelicula.h"
 #include "menus.h"
+#include "usuario.h"
+#include "admin.h"
 
 int main() {
     char opcion, opcionAdmin,opcionUsuario;
     Videoclub v;
     Pelicula p;
+    Usuario usuario;
+    Administrador admin;
 
     inicializarVideoclub(&v);
 
@@ -14,6 +18,7 @@ int main() {
         switch (opcion) {
             case '1':  // Menú administrador
                 do {
+                	iniciarSesionAdmin(admin.Email,admin.Contrasenia);
                     opcionAdmin = menuAdministrador();
                     switch (opcionAdmin) {
                         case '1':
@@ -39,6 +44,7 @@ int main() {
 
             case '2':  // Menú usuario
             	 do {
+            		 iniciarSesion(usuario.Email,usuario.Contrasenia);
             	        opcionUsuario = menuUsuario();
             	        switch (opcionUsuario) {
             	            case '1':
