@@ -1,4 +1,5 @@
 #include "pelicula.h"
+#include "usuario.h"
 #include <stdio.h>
 #include <stdlib.h> //Para usar malloc y free
 #include <string.h>
@@ -6,6 +7,7 @@
 void inicializarVideoclub(Videoclub *v) {
 	v->aPeliculas = NULL;
 	v->numPeliculas = 0;
+
 }
 void aniadirPelicula(Videoclub *v, Pelicula p) {
 	int i;
@@ -23,7 +25,7 @@ void aniadirPelicula(Videoclub *v, Pelicula p) {
 		}
 		//Libero la memoria de aPeliculas
 		free(v->aPeliculas);
-		//Vuelvo a reservar memoria con una posiciÛn m·s de las que habÌa
+		//Vuelvo a reservar memoria con una posiciÔøΩn mÔøΩs de las que habÔøΩa
 		v->aPeliculas = (Pelicula*) malloc(
 				(v->numPeliculas + 1) * sizeof(Pelicula));
 		//Copio el contenido del array auxiliar al array aPeliculas
@@ -32,7 +34,7 @@ void aniadirPelicula(Videoclub *v, Pelicula p) {
 		}
 		//Libero la memoria del array auxiliar
 		free(aux);
-		//Guardo la nueva pelÌcula en el array aPeliculas
+		//Guardo la nueva pelÔøΩcula en el array aPeliculas
 		//v->aPeliculas[v->numPeliculas] = p;
 		//v->numPeliculas++;
 	}
@@ -41,7 +43,7 @@ void aniadirPelicula(Videoclub *v, Pelicula p) {
 }
 
 void mostrarTitulos() {
-	printf("%20s%20s%20s%20s\n", "TITULO", "A—O", "DURACI”N", "NOMINADA OSCAR");
+	printf("%20s%20s%20s%20s\n", "TITULO", "G√âNERO", "DURACI√ìN", "REPARTO");
 }
 void mostrarPeliculasVideoclub(Videoclub v) {
 	int i;
@@ -52,48 +54,27 @@ void mostrarPeliculasVideoclub(Videoclub v) {
 }
 
 void mostrarPelicula(Pelicula p) {
-	printf("%20s%20d%20d", p.titulo, p.anio, p.duracion);
-	if (p.nominadaOscar) {  //if(p.nominadaOscar==1){
-		printf("%20s\n", "SÕ");
-	} else {
-		printf("%20s\n", "NO");
-	}
+	printf("%20s%20s%20d%20s", p.titulo, p.genero, p.duracion,p.Reparto);
 }
 Pelicula pedirPelicula() {
 	Pelicula p;
-	printf("Introduce el tÌtulo: ");
+	printf("Introduce el t√≠tulo: ");
 	fflush(stdout);
 	fflush(stdin);
 	gets(p.titulo);
-	printf("Introduce el aÒo: ");
-	fflush(stdout);
-	fflush(stdin);
-	scanf("%d", &p.anio);
-	printf("Introduce la duraciÛn: ");
+	printf("Introduce la duraci√≥n: ");
 	fflush(stdout);
 	fflush(stdin);
 	scanf("%d", &p.duracion);
-	printf("øEst· nominada al oscar (1-SÌ, 0-No)? ");
+	printf("Introduce el g√©nero: ");
 	fflush(stdout);
 	fflush(stdin);
-	scanf("%d", &p.nominadaOscar);
+	scanf(p.genero);
+	printf("Introduce el reparto ");
+	fflush(stdout);
+	fflush(stdin);
+	scanf(p.Reparto);
 	return p;
-}
-
-void ordenarVideoclubPorAnio(Videoclub *v) {
-	//Para ordenar usamos el mÈtodo de la burbuja
-	//Vamos a ordenar de menor a mayor aÒo
-	Pelicula aux;
-	int i, j;
-	for (i = 0; i < v->numPeliculas - 1; i++) {
-		for (j = i + 1; j < v->numPeliculas; j++) {
-			if (v->aPeliculas[i].anio > v->aPeliculas[j].anio) {
-				aux = v->aPeliculas[i];
-				v->aPeliculas[i] = v->aPeliculas[j];
-				v->aPeliculas[j] = aux;
-			}
-		}
-	}
 }
 
 void ordenarVideoclubPorTitulo(Videoclub *v) {
@@ -109,6 +90,65 @@ void ordenarVideoclubPorTitulo(Videoclub *v) {
 		}
 	}
 }
+
+void eliminarPelicula(Videoclub *v, char *titulo){
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+typedef struct {
+    char titulo[100];
+    char director[50];
+    int anio;
+} Pelicula;
+
+typedef struct {
+    Pelicula *peliculas;  // Array din√°mico de pel√≠culas
+    int numPeliculas;     // Contador de pel√≠culas
+} Videoclub;
+
+void eliminarPelicula(Videoclub *v, char *titulo) {
+    int encontrado = -1;
+
+    // Buscar la pel√≠cula en el array
+    for (int i = 0; i < v->numPeliculas; i++) {
+        if (strcmp(v->peliculas[i].titulo, titulo) == 0) {
+            encontrado = i;
+            break;
+        }
+    }
+
+    if (encontrado == -1) {
+        printf("La pel√≠cula \"%s\" no se encontr√≥ en el videoclub.\n", titulo);
+        return;
+    }
+
+    // Desplazar los elementos para sobrescribir la pel√≠cula eliminada
+    for (int i = encontrado; i < v->numPeliculas - 1; i++) {
+        v->peliculas[i] = v->peliculas[i + 1];
+    }
+
+    // Reducir el tama√±o del array din√°mico con realloc
+    v->numPeliculas--;
+    v->peliculas = realloc(v->peliculas, v->numPeliculas * sizeof(Pelicula));
+
+    printf("La pel√≠cula \"%s\" ha sido eliminada correctamente.\n", titulo);
+		}
+
+	}
+
+
+char pedirTitulo(){
+	char titulo;
+	printf("Introduce el t√≠tulo: ");
+	fflush(stdout);
+	fflush(stdin);
+	gets(titulo);
+	return titulo;
+
+
+}
+
 
 void liberaMemoria(Videoclub *v){
 	free(v->aPeliculas);

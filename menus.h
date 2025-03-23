@@ -5,5 +5,6 @@
 char menuPrincipal();
 char menuUsuario();
 char menuAdministrador();
+char menuSesiones();
 
 #endif /* MENUS_H_ */

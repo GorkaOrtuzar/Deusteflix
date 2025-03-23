@@ -12,5 +12,8 @@ typedef struct usuario{
 }Usuario;
 
 void iniciarSesion(char *email, char *con);
+Usuario registrarUsuario();
+void mostrarUsuario(Usuario u);
+
 
 #endif /* USUARIO_H_ */

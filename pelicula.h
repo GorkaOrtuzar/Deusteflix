@@ -3,14 +3,14 @@
 
 typedef struct{
 	char titulo[20];
+	char genero[20];
 	int duracion;
-	int anio;
-	int nominadaOscar; //1- sí está nominada    0-no está nominada
+	char Reparto[20]; //1- sï¿½ estï¿½ nominada    0-no estï¿½ nominada
 }Pelicula;
 
-/*Nuestro videoclub tiene un número ilimitado de películas*/
+/*Nuestro videoclub tiene un nï¿½mero ilimitado de pelï¿½culas*/
 typedef struct{
-	Pelicula *aPeliculas; //Como no sabemos cuántas películas hay, tenemos que declarar un array dinámico
+	Pelicula *aPeliculas; //Como no sabemos cuï¿½ntas pelï¿½culas hay, tenemos que declarar un array dinï¿½mico
 	int numPeliculas;
 }Videoclub;
 
@@ -20,9 +20,10 @@ void mostrarTitulos();
 void mostrarPeliculasVideoclub(Videoclub v);
 void mostrarPelicula(Pelicula p);
 Pelicula pedirPelicula();
-void ordenarVideoclubPorAnio(Videoclub *v);
 void ordenarVideoclubPorTitulo(Videoclub *v);
 void liberaMemoria(Videoclub *v);
+void eliminarPelicula(Videoclub *v,char * titulo);
+char pedirTitulo();
 #endif /* PELICULA_H_ */
 
 

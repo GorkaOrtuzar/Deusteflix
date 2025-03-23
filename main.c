@@ -5,11 +5,11 @@
 #include "admin.h"
 
 int main() {
-    char opcion, opcionAdmin,opcionUsuario;
+    char opcion, opcionAdmin,opcionUsuario, titulo;
     Videoclub v;
     Pelicula p;
     Usuario usuario;
-    Administrador admin;
+    Administrador administrador;
 
     inicializarVideoclub(&v);
 
@@ -17,51 +17,62 @@ int main() {
         opcion = menuPrincipal();
         switch (opcion) {
             case '1':  // Menú administrador
-                do {
-                	iniciarSesionAdmin(admin.Email,admin.Contrasenia);
-                    opcionAdmin = menuAdministrador();
-                    switch (opcionAdmin) {
-                        case '1':
-                            printf("Método Ver listado de películas\n");
-                            mostrarPeliculasVideoclub(v);
-                            break;
-                        case '2':
-                            printf("Método Ver listado de usuarios\n");
-                            break;
-                        case '3':
-                            printf("Método eliminar película\n");
-                            break;
-                        case '4':
-                            printf("Método añadir película\n");
-                            p = pedirPelicula();
-                            aniadirPelicula(&v, p);
-                            printf("Se ha añadido correctamente\n");
-                            fflush(stdout);
-                            break;
-                    }
-                } while (opcionAdmin != '0');  // Salir del menú administrador
+               iniciarSesionAdmin(administrador.Email, administrador.Contrasenia);
+               if (strcmp(administrador.Email, "admin@example.com") == 0 && strcmp(administrador.Contrasenia, "admin123") == 0) {
+            	   do {
+            		   opcionAdmin = menuAdministrador();
+            		   switch (opcionAdmin) {
+            		   case '1':
+            		       printf("Método Ver listado de películas\n");
+            		       mostrarPeliculasVideoclub(v);
+            		       break;
+            		    case '2':
+            		       printf("Método Ver listado de usuarios\n");
+            		       // Mostrar listado de usuarios
+            		       break;
+            		    case '3':
+            		       printf("Método eliminar película\n");
+            		       // Eliminar una película
+            		       titulo =pedirTitulo();
+            		       eliminarPelicula(&v,titulo);
+            		       break;
+            		    case '4':
+            		       printf("Método añadir película\n");
+            		       p = pedirPelicula();
+            		       aniadirPelicula(&v, p);
+            		       printf("Se ha añadido correctamente\n");
+            		       fflush(stdout);
+            		       break;
+            		   }
+            	   }while (opcionAdmin != '0');  // Salir del menú administrador
+            	   }else{
+                       printf("Credenciales incorrectas para el administrador\n");
+                }
+
+
                 break;
 
             case '2':  // Menú usuario
-            	 do {
-            		 iniciarSesion(usuario.Email,usuario.Contrasenia);
-            	        opcionUsuario = menuUsuario();
-            	        switch (opcionUsuario) {
-            	            case '1':
-            	            	printf("Método Ver datos presonales\n");
-            	            	break;
-            	            case '2':
-            	            	printf("Método Ver Listado de peliculas\n");
-            	                break;
-            	                    }
-            	                } while (opcionUsuario != '0');  // Salir del menú usuario
-            	                break;
+                iniciarSesion(usuario.Email, usuario.Contrasenia);
+                if (strcmp(usuario.Email, "usuario@example.com") == 0 && strcmp(usuario.Contrasenia, "usuario123") == 0) {
+                	do {
+                		opcionUsuario = menuUsuario();
+                		switch (opcionUsuario) {
+                		 case '1':
+                		      printf("Método Ver datos presonales\n");
+                		      //mostrarUsuario();
+                		      break;
+                		 case '2':
+                			 printf("Método Ver listado de peliculas");
+							 mostrarPeliculasVideoclub(v);
+                			 break;
+                		  }
+                	}  while (opcionUsuario != '0');  // Salir del menú usuario
+                } else{
+                	printf("Credenciales incorrectas para el usuario\n");
 
-
-            case '3':  // Ordenar por año
-                ordenarVideoclubPorAnio(&v);
+                }
                 break;
-
             case '4':  // Ordenar por título
                 ordenarVideoclubPorTitulo(&v);
                 break;

@@ -1,5 +1,4 @@
 
-
 #ifndef ADMIN_H_
 #define ADMIN_H_
 
@@ -9,5 +8,6 @@ typedef struct admin{
 }Administrador;
 
 void iniciarSesionAdmin(char *email, char *con);
+
 
 #endif /* ADMIN_H_ */

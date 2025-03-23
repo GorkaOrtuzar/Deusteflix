@@ -41,4 +41,16 @@ char menuUsuario(){
 	return opcion;
 }
 
+char menuSesiones(){
+	char opcion;
+
+	printf("1. Inicar Sesion\n");
+		printf("2. Registrarse\n");
+		printf("0. Salir\n");
+		printf("Elige una opción: ");
+		fflush(stdout);
+		fflush(stdin);
+		scanf("%c",&opcion);
+		return opcion;
+}
 
