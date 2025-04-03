@@ -1,8 +1,11 @@
-#include <stdio.h>
-#include "pelicula.h"
+
+
 #include "menus.h"
 #include "usuario.h"
 #include "admin.h"
+#include "pelicula.h"
+#include <stdio.h>
+#include <string.h>
 
 int main() {
     char opcion, opcionAdmin,opcionUsuario, titulo;
@@ -10,8 +13,10 @@ int main() {
     Pelicula p;
     Usuario usuario;
     Administrador administrador;
+    ListaUsuarios lu;
 
     inicializarVideoclub(&v);
+    inicializarListaUsuarios(&lu);
 
     do {
         opcion = menuPrincipal();
@@ -51,16 +56,16 @@ int main() {
 
 
                 break;
-
+            // Menú usuario
             case '2':  // Menú usuario
-                iniciarSesion(usuario.Email, usuario.Contrasenia);
+                iniciarSesion(lu);
                 if (strcmp(usuario.Email, "usuario@example.com") == 0 && strcmp(usuario.Contrasenia, "usuario123") == 0) {
                 	do {
                 		opcionUsuario = menuUsuario();
                 		switch (opcionUsuario) {
                 		 case '1':
                 		      printf("Método Ver datos presonales\n");
-                		      //mostrarUsuario();
+                		      mostrarUsuario();
                 		      break;
                 		 case '2':
                 			 printf("Método Ver listado de peliculas");
@@ -76,6 +81,11 @@ int main() {
             case '4':  // Ordenar por título
                 ordenarVideoclubPorTitulo(&v);
                 break;
+            case '5':
+                        	 usuario = RegistrarUsuario();
+                        	 aniadirUsuario(&lu, usuario);
+                        	 printf("Registro exitoso. Puedes iniciar sesión desde el menú.\n");
+                        	 break;
 
             case '0':  // Salida del programa
                 printf("HASTA LA PROXIMA\n");

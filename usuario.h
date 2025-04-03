@@ -1,4 +1,5 @@
 
+
 #ifndef USUARIO_H_
 #define USUARIO_H_
 
@@ -11,9 +12,15 @@ typedef struct usuario{
 	char Contrasenia[30];
 }Usuario;
 
-void iniciarSesion(char *email, char *con);
-Usuario registrarUsuario();
-void mostrarUsuario(Usuario u);
+typedef struct{
+	Usuario * aUsuarios;
+	int numUsuarios;
+}ListaUsuarios;
+void inicializarListaUsuarios(ListaUsuarios *lu);
+int iniciarSesion(ListaUsuarios lu);
+Usuario RegistrarUsuario();
+void aniadirUsuario(ListaUsuarios *lu, Usuario u);
+int verificarUsuario(ListaUsuarios lu, char *email, char *con);
 
 
-#endif /* USUARIO_H_ */
+#endif

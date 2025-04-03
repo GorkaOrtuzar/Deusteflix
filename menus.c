@@ -4,13 +4,15 @@ char menuPrincipal(){
 	char opcion;
 
 	printf("1. Administrador\n");
-	printf("2. Usuario\n");
-	printf("0. Salir\n");
-	printf("Elige una opci�n: ");
-	fflush(stdout);
-	fflush(stdin);
-	scanf("%c",&opcion);
-	return opcion;
+		printf("2. Usuario\n");
+		printf("5. Registrase\n");
+		printf("0. Salir\n");
+		printf("Elige una opci n: ");
+		fflush(stdout);
+		fflush(stdin);
+		scanf("%c",&opcion);
+		return opcion;
+
 }
 
 char menuAdministrador(){
