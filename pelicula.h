@@ -23,7 +23,7 @@ Pelicula pedirPelicula();
 void ordenarVideoclubPorTitulo(Videoclub *v);
 void liberaMemoria(Videoclub *v);
 void eliminarPelicula(Videoclub *v,char * titulo);
-char pedirTitulo();
+char *pedirTitulo();
 #endif /* PELICULA_H_ */
 
 

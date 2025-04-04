@@ -11,7 +11,7 @@ void inicializarListaUsuarios(ListaUsuarios *lu){
 }
 
 
-int iniciarSesion(ListaUsuarios lu) {
+int iniciarSesion(ListaUsuarios *lu) {
     char email[20], con[30];
 
     printf("Introduce tu email: ");
@@ -26,10 +26,10 @@ int iniciarSesion(ListaUsuarios lu) {
 
     if (verificarUsuario(lu, email, con)) {
         printf("Inicio de sesión exitoso. Bienvenido!\n");
-        return 1;
+        return 0;
     } else {
         printf("Error: Email o contraseña incorrectos. Volviendo al menú principal.\n");
-        return 0;
+        return 1;
     }
 }
 Usuario RegistrarUsuario() {
@@ -81,9 +81,9 @@ void aniadirUsuario(ListaUsuarios *lu, Usuario nuevoUsuario) {
     lu->numUsuarios++;
 }
 
-int verificarUsuario(ListaUsuarios lu, char *email, char *con) {
-    for (int i = 0; i < lu.numUsuarios; i++) {
-        if (strcmp(lu.aUsuarios[i].Email, email) == 0 && strcmp(lu.aUsuarios[i].Contrasenia, con) == 0) {
+int verificarUsuario(ListaUsuarios *lu, char *email, char *con) {
+    for (int i = 0; i < lu->numUsuarios; i++) {
+        if (strcmp(lu->aUsuarios[i].Email, email) == 0 && strcmp(lu->aUsuarios[i].Contrasenia, con) == 0) {
             return 1;
         }
     }

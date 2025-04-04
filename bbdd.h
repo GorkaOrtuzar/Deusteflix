@@ -4,7 +4,7 @@
 
 #include "sqlite3.h"
 #include "pelicula.h"
-#define NOMBRE_BBDD "Peliculas.db"
+#define NOMBRE_BBDD "Deustnetflix.db"
 
 int inicializarBBDD(sqlite3 **db);
 void crearTablas(sqlite3 *db);

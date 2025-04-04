@@ -17,10 +17,10 @@ typedef struct{
 	int numUsuarios;
 }ListaUsuarios;
 void inicializarListaUsuarios(ListaUsuarios *lu);
-int iniciarSesion(ListaUsuarios lu);
+int iniciarSesion(ListaUsuarios *lu);
 Usuario RegistrarUsuario();
 void aniadirUsuario(ListaUsuarios *lu, Usuario u);
-int verificarUsuario(ListaUsuarios lu, char *email, char *con);
+int verificarUsuario(ListaUsuarios *lu, char *email, char *con);
 
 
 #endif
