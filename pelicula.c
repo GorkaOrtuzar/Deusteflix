@@ -1,8 +1,10 @@
 #include "pelicula.h"
 #include "usuario.h"
+#include "admin.h"
 #include <stdio.h>
-#include <stdlib.h> // Para usar malloc y free
+#include <stdlib.h>
 #include <string.h>
+#define NOMFICH_Peliculas "Peliculas.csv"
 
 void inicializarVideoclub(Videoclub *v) {
     v->aPeliculas = NULL;
@@ -10,7 +12,6 @@ void inicializarVideoclub(Videoclub *v) {
 }
 
 void aniadirPelicula(Videoclub *v, Pelicula p) {
-    int i;
     if (v->aPeliculas == NULL) {
         v->aPeliculas = (Pelicula*) malloc(1 * sizeof(Pelicula));
         if (v->aPeliculas == NULL) {
@@ -37,6 +38,12 @@ void mostrarTitulos() {
 
 void mostrarPeliculasVideoclub(Videoclub v) {
     int i;
+
+    if (v.numPeliculas == 0) {
+        printf("No hay películas en el videoclub.\n");
+        return;
+    }
+
     mostrarTitulos();
     for (i = 0; i < v.numPeliculas; i++) {
         mostrarPelicula(v.aPeliculas[i]);
@@ -52,20 +59,24 @@ Pelicula pedirPelicula() {
 
     printf("Introduce el título: ");
     fflush(stdout);
-    gets(p.titulo); // Usar gets para leer la cadena del título
+    fflush(stdin);
+    gets(p.titulo);
 
-    printf("Introduce la duración: ");
+    printf("Introduce la duración (en minutos): ");
     fflush(stdout);
+    fflush(stdin);
     scanf("%d", &p.duracion);
     getchar(); // Limpiar el buffer de entrada después de scanf
 
     printf("Introduce el género: ");
     fflush(stdout);
-    gets(p.genero); // Usar gets para leer la cadena del género
+    fflush(stdin);
+    gets(p.genero);
 
     printf("Introduce el reparto: ");
     fflush(stdout);
-    gets(p.Reparto); // Usar gets para leer la cadena del reparto
+    fflush(stdin);
+    gets(p.Reparto);
 
     return p;
 }
@@ -73,6 +84,11 @@ Pelicula pedirPelicula() {
 void ordenarVideoclubPorTitulo(Videoclub *v) {
     Pelicula aux;
     int i, j;
+
+    if (v->numPeliculas <= 1) {
+        return; // No hay nada que ordenar
+    }
+
     for (i = 0; i < v->numPeliculas - 1; i++) {
         for (j = i + 1; j < v->numPeliculas; j++) {
             if (strcmp(v->aPeliculas[i].titulo, v->aPeliculas[j].titulo) > 0) {
@@ -85,18 +101,16 @@ void ordenarVideoclubPorTitulo(Videoclub *v) {
 }
 
 char* pedirTitulo() {
-    char* titulo;
-    if (titulo == NULL) {
-        printf("Error: No se pudo asignar memoria\n");
-        return NULL;
-    }
+    static char titulo[50]; // Usamos un buffer estático para evitar problemas de memoria
 
     printf("Introduce el título: ");
     fflush(stdout);
-    gets(titulo); // Usar gets para leer la cadena como solicitaste
+    fflush(stdin);
+    gets(titulo);
 
     return titulo;
 }
+
 void eliminarPelicula(Videoclub *v, char *titulo) {
     int encontrado = -1;
 
@@ -120,15 +134,76 @@ void eliminarPelicula(Videoclub *v, char *titulo) {
 
     // Reducir el tamaño del array dinámico con realloc
     v->numPeliculas--;
-    Pelicula *temp = realloc(v->aPeliculas, v->numPeliculas * sizeof(Pelicula));
-    if (temp != NULL || v->numPeliculas == 0) {
-        v->aPeliculas = temp; // Actualiza solo si realloc fue exitoso
+
+    if (v->numPeliculas > 0) {
+        Pelicula *temp = realloc(v->aPeliculas, v->numPeliculas * sizeof(Pelicula));
+        if (temp != NULL) {
+            v->aPeliculas = temp; // Actualiza solo si realloc fue exitoso
+        }
+    } else {
+        free(v->aPeliculas);
+        v->aPeliculas = NULL;
     }
 
     printf("La película \"%s\" ha sido eliminada correctamente.\n", titulo);
 }
 
 void liberaMemoria(Videoclub *v) {
-    free(v->aPeliculas);
+    if (v->aPeliculas != NULL) {
+        free(v->aPeliculas);
+        v->aPeliculas = NULL;
+    }
     v->numPeliculas = 0;
+}
+
+void guardarPeliculasEnArchivo(Videoclub *v, const char* nombreArchivo) {
+    FILE *f = fopen(nombreArchivo, "w");
+    if (f == NULL) {
+        printf("Error al abrir el archivo %s para escritura\n", nombreArchivo);
+        return;
+    }
+
+    for (int i = 0; i < v->numPeliculas; i++) {
+        fprintf(f, "%s;%s;%d;%s\n",
+                v->aPeliculas[i].titulo,
+                v->aPeliculas[i].genero,
+                v->aPeliculas[i].duracion,
+                v->aPeliculas[i].Reparto);
+    }
+
+    fclose(f);
+}
+
+void cargarPeliculasDesdeArchivo(Videoclub *v, const char* nombreArchivo) {
+    FILE *f = fopen(nombreArchivo, "r");
+    if (f == NULL) {
+        printf("No se pudo abrir el archivo %s. Se creará al guardar películas.\n", nombreArchivo);
+        return;
+    }
+
+    char linea[200];
+    Pelicula pelicula;
+
+    while (fgets(linea, sizeof(linea), f)) {
+        // Eliminar el salto de línea
+        linea[strcspn(linea, "\r\n")] = '\0';
+
+        char *token = strtok(linea, ";");
+        if (token != NULL) {
+            strcpy(pelicula.titulo, token);
+
+            token = strtok(NULL, ";");
+            if (token != NULL) strcpy(pelicula.genero, token);
+
+            token = strtok(NULL, ";");
+            if (token != NULL) pelicula.duracion = atoi(token);
+
+            token = strtok(NULL, ";");
+            if (token != NULL) strcpy(pelicula.Reparto, token);
+
+            aniadirPelicula(v, pelicula);
+        }
+    }
+
+    fclose(f);
 }

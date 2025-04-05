@@ -9,4 +9,6 @@
 int inicializarBBDD(sqlite3 **db);
 void crearTablas(sqlite3 *db);
 int insertarPelicula(sqlite3 *db, Pelicula p);
-#endif /* BBDD_H_ */
+
+#endif /* BBDD_H_ */
+
