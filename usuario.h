@@ -16,7 +16,7 @@ typedef struct{
 } ListaUsuarios;
 
 void inicializarListaUsuarios(ListaUsuarios *lu);
-int iniciarSesion(ListaUsuarios *lu);
+int iniciarSesion(ListaUsuarios *lu,Usuario *usuarioActual);
 Usuario RegistrarUsuario();
 void mostrarUsuario(Usuario u);
 void aniadirUsuario(ListaUsuarios *lu, Usuario u);

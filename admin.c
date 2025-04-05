@@ -17,7 +17,7 @@ void iniciarSesionAdmin(char *email, char *con) {
 }
 
 void mostrarTitulosUser() {
-    printf("%20s%20s%20s%20s%20s%20s\n", "NOMBRE", "APELLIDO", "EMAIL", "NICKNAME", "PAIS", "CONTRASEÑA");
+    printf("\033[1;35m%20s%15s%15s%20s%15s%20s\n", "NOMBRE", "APELLIDO", "EMAIL", "NICKNAME", "PAIS", "CONTRASEÑA\033[0m\n");
 }
 
 void aniadirAdministrador(ListaAdministradores* la, Administrador a) {
@@ -115,7 +115,7 @@ void mostrarTodosLosUsuarios(ListaUsuarios lu) {
     int i;
     mostrarTitulosUser();
     for(i=0; i < lu.numUsuarios; i++) {
-        printf("%20s%20s%20s%20s%20s%20s\n",
+        printf("%20s%15s%20s%15s%15s%15s\n",
                lu.aUsuarios[i].Nombre,
                lu.aUsuarios[i].Apellido,
                lu.aUsuarios[i].Email,

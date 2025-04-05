@@ -33,7 +33,7 @@ void aniadirPelicula(Videoclub *v, Pelicula p) {
 }
 
 void mostrarTitulos() {
-    printf("%20s%20s%20s%20s\n", "TITULO", "GÉNERO", "DURACIÓN", "REPARTO");
+    printf("\033[1;35m%20s%30s%20s%30s\n", "TITULO", "GÉNERO", "DURACIÓN", "REPARTO\033[0m");
 }
 
 void mostrarPeliculasVideoclub(Videoclub v) {
@@ -51,7 +51,7 @@ void mostrarPeliculasVideoclub(Videoclub v) {
 }
 
 void mostrarPelicula(Pelicula p) {
-    printf("%20s%20s%20d%20s\n", p.titulo, p.genero, p.duracion, p.Reparto);
+    printf("%20s%30s%20d%30s\n", p.titulo, p.genero, p.duracion, p.Reparto);
 }
 
 Pelicula pedirPelicula() {

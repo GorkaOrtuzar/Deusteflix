@@ -8,7 +8,7 @@ void inicializarListaUsuarios(ListaUsuarios *lu) {
     lu->aUsuarios = NULL;
 }
 
-int iniciarSesion(ListaUsuarios *lu) {
+int iniciarSesion(ListaUsuarios *lu, Usuario *usuarioActual) {
     char email[20], con[30];
 
     printf("Introduce tu email: ");
@@ -21,13 +21,21 @@ int iniciarSesion(ListaUsuarios *lu) {
     fflush(stdin);
     gets(con);
 
-    if (verificarUsuario(lu, email, con)) {
-        printf("Inicio de sesión exitoso. Bienvenido!\n");
-        return 0; // Éxito
-    } else {
-        printf("Error: Email o contraseña incorrectos. Volviendo al menú principal.\n");
-        return 1; // Error
+    // Buscar al usuario por email y contraseña
+    for (int i = 0; i < lu->numUsuarios; i++) {
+        if (strcmp(lu->aUsuarios[i].Email, email) == 0 &&
+            strcmp(lu->aUsuarios[i].Contrasenia, con) == 0) {
+
+            // Copiar los datos del usuario encontrado
+            *usuarioActual = lu->aUsuarios[i];
+
+            printf("Inicio de sesión exitoso. Bienvenido, %s!\n", usuarioActual->Nombre);
+            return 0; // Éxito
+        }
     }
+
+    printf("Error: Email o contraseña incorrectos. Volviendo al menú principal.\n");
+    return 1; // Error
 }
 
 Usuario RegistrarUsuario() {
@@ -66,6 +74,8 @@ Usuario RegistrarUsuario() {
 }
 
 void mostrarUsuario(Usuario u) {
+
+	printf("\033[1;32m----- DATOS PERSONALES ----\033[0m\n");
     printf("Nombre: %s\n", u.Nombre);
     printf("Apellido: %s\n", u.Apellido);
     printf("Email: %s\n", u.Email);

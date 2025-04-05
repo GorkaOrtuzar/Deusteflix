@@ -13,7 +13,7 @@ int main() {
     char opcion, opcionAdmin, opcionUsuario, opcionSesion, *titulo;
     Videoclub v;
     Pelicula p;
-    Usuario usuario;
+    Usuario usuario,usuarioActual;
     // Eliminamos la variable no utilizada administrador
     ListaUsuarios lu;
     ListaAdministradores la;
@@ -29,7 +29,7 @@ int main() {
     if (result == SQLITE_OK) {
         crearTablas(db);
     } else {
-        printf("No se ha establecido la conexión con la BBDD\n");
+        printf("\033[1;31mNo se ha establecido la conexión con la BBDD\033[0m\n");
         fflush(stdout);
     }
 
@@ -83,26 +83,11 @@ int main() {
                                 guardarUsuariosEnArchivo(&lu, ARCHIVO_USUARIOS);
                                 printf("Usuario añadido correctamente\n");
                                 break;
-                            case '6':
-                                printf("Eliminar usuario\n");
-                                printf("Introduzca el índice del usuario a eliminar: ");
-                                fflush(stdout);
-                                fflush(stdin);
-                                int indice;
-                                scanf("%d", &indice);
-                                getchar(); // Limpiar buffer
 
-                                if (eliminarUsuario(&lu, indice - 1)) { // -1 porque el usuario ve índices desde 1
-                                    guardarUsuariosEnArchivo(&lu, ARCHIVO_USUARIOS);
-                                    printf("Usuario eliminado correctamente\n");
-                                } else {
-                                    printf("Error: Índice de usuario inválido\n");
-                                }
-                                break;
                         }
                     } while (opcionAdmin != '0');  // Salir del menú administrador
                 } else {
-                    printf("Credenciales incorrectas para el administrador\n");
+                    printf("\033[1;31mCredenciales incorrectas para el administrador\033[0m\n");
                 }
                 break;
 
@@ -112,7 +97,7 @@ int main() {
                     opcionSesion = menuSesiones();
                     switch (opcionSesion) {
                         case '1': // Iniciar sesión
-                            if (iniciarSesion(&lu) == 0) { // Éxito
+                            if (iniciarSesion(&lu,&usuarioActual) == 0) { // Éxito
                                 usuarioEncontrado = 1;
                                 opcionSesion = '0'; // Salir del submenu
                             }
@@ -134,8 +119,12 @@ int main() {
                             case '1':
                                 printf("Ver datos personales\n");
                                 // Mostrar los datos del usuario actualmente logueado
+                                if(usuarioEncontrado){
+                                	mostrarUsuario(usuarioActual);
+                                }else{
+                                    printf("\033[1;31mError: No hay sesión iniciada.\033[0m\n");
+                                }
                                 // En una implementación completa, se guardaría el índice del usuario logueado
-                                printf("Funcionalidad en desarrollo...\n");
                                 break;
                             case '2':
                                 printf("Ver listado de películas\n");
@@ -163,7 +152,7 @@ int main() {
                                         }
                                     }
                                     if (!encontrada) {
-                                        printf("Película no encontrada en el catálogo.\n");
+                                        printf("\033[1;31mPelícula no encontrada en el catálogo.\033[0m\n");
                                     }
                                 }
                                 break;
@@ -172,18 +161,13 @@ int main() {
                 }
                 break;
 
-            case '3':  // Ordenar por título
-                ordenarVideoclubPorTitulo(&v);
-                printf("Películas ordenadas por título.\n");
-                break;
-
             case '0':  // Salida del programa
                 printf("HASTA LA PROXIMA\n");
                 fflush(stdout);
                 break;
 
             default:
-                printf("ERROR! La opción seleccionada no es correcta\n");
+                printf("\033[1;31mERROR! La opción seleccionada no es correcta\033[0m\n");
                 fflush(stdout);
                 break;
         }
