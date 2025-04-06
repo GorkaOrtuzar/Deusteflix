@@ -40,6 +40,7 @@ char menuUsuario(){
     printf("\033[1;36m\n--- MENU USUARIO ---\033[0m\n");
     printf("1. Ver datos personales\n");
     printf("2. Ver listado de películas\n");
+    printf("3. Ver mis peliculas vistas\n");
     printf("0. Salir\n");
     printf("Elige una opción: ");
     fflush(stdout);
@@ -55,7 +56,7 @@ char menuSesiones(){
     printf("\033[1;36m\n--- INICIAR SESIÓN / REGISTRARSE ---\033[0m\n");
     printf("1. Iniciar Sesión\n");
     printf("2. Registrarse\n");
-    printf("0. Volver\033\n");
+    printf("0. Volver\n");
     printf("Elige una opción: ");
     fflush(stdout);
     fflush(stdin);

@@ -14,20 +14,22 @@ int main() {
     Videoclub v;
     Pelicula p;
     Usuario usuario,usuarioActual;
-    // Eliminamos la variable no utilizada administrador
     ListaUsuarios lu;
     ListaAdministradores la;
+    char opcionRegistro;
     int usuarioEncontrado = 0, adminEncontrado = 0;
     char email[20], contrasenia[30];
 
     // Base de datos
     sqlite3 *db;
-    int result;
+    int result, resultBD;
 
     // Inicializar la BD
     result = inicializarBBDD(&db);
     if (result == SQLITE_OK) {
         crearTablas(db);
+        crearTablaPeliculasVistas(db);
+        cargarDatosCSVaBD(&db,ARCHIVO_PELICULAS,ARCHIVO_USUARIOS);
     } else {
         printf("\033[1;31mNo se ha establecido la conexión con la BBDD\033[0m\n");
         fflush(stdout);
@@ -73,6 +75,10 @@ int main() {
                                 p = pedirPelicula();
                                 aniadirPelicula(&v, p);
                                 guardarPeliculasEnArchivo(&v, ARCHIVO_PELICULAS);
+                                resultBD = insertarPeliculaEnBD(&p, db);
+                                    if (resultBD != SQLITE_OK) {
+                                        fprintf(stderr, "Error al insertar película\n");
+                                    }
                                 printf("Se ha añadido correctamente\n");
                                 fflush(stdout);
                                 break;
@@ -81,6 +87,10 @@ int main() {
                                 usuario = RegistrarUsuario();
                                 aniadirUsuario(&lu, usuario);
                                 guardarUsuariosEnArchivo(&lu, ARCHIVO_USUARIOS);
+                                resultBD = insertarUsuarioEnBD(&usuario, db);
+                                    if (resultBD != SQLITE_OK) {
+                                        fprintf(stderr, "Error al insertar usuario\n");
+                                    }
                                 printf("Usuario añadido correctamente\n");
                                 break;
 
@@ -106,7 +116,12 @@ int main() {
                             usuario = RegistrarUsuario();
                             aniadirUsuario(&lu, usuario);
                             guardarUsuariosEnArchivo(&lu, ARCHIVO_USUARIOS);
+                            resultBD = insertarUsuarioEnBD(&usuario,db);
+                            if (resultBD != SQLITE_OK) {
+                                   fprintf(stderr, "Error al insertar usuario\n");
+                                     }
                             printf("Usuario registrado correctamente. Ya puede iniciar sesión.\n");
+
                             break;
                     }
                 } while (opcionSesion != '0');
@@ -148,6 +163,16 @@ int main() {
                                             printf("Presiona cualquier tecla para volver al menú...\n");
                                             fflush(stdin);
                                             getchar();
+                                            //Registar pelicula
+                                            printf("¿Quieres registrar esta película como vista? (s/n): ");
+                                            fflush(stdout);
+                                            fflush(stdin);
+                                            scanf("%c", &opcionRegistro);
+                                            getchar(); // Limpiar buffer
+
+                                            if (opcionRegistro == 's' || opcionRegistro == 'S') {
+                                                registrarVisualizacionPelicula(db, usuarioActual, peliculaSeleccionada);
+                                            }
                                             break;
                                         }
                                     }
@@ -155,6 +180,13 @@ int main() {
                                         printf("\033[1;31mPelícula no encontrada en el catálogo.\033[0m\n");
                                     }
                                 }
+                                break;
+                            case '3':
+                                printf("\033[1;36m--- PELÍCULAS VISTAS ---\033[0m\n");
+                                mostrarPeliculasVistasUsuario(db, usuarioActual);
+                                printf("\nPresiona cualquier tecla para volver al menú...\n");
+                                fflush(stdin);
+                                getchar();
                                 break;
                         }
                     } while (opcionUsuario != '0');  // Salir del menú usuario

@@ -49,7 +49,6 @@ void cargarAdministradoresDesdeCSV(ListaAdministradores *la) {
             char *email = strtok(linea, ";");
             char *con = strtok(NULL, "\n");
 
-            // Elimina '\r' si quedó alguno en la contraseña (Windows a veces lo deja)
             if (con != NULL && con[strlen(con) - 1] == '\r') {
                 con[strlen(con) - 1] = '\0';
             }

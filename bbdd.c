@@ -1,461 +1,78 @@
-#include "bbdd.h"
 #include <stdio.h>
-#include <string.h>
 #include <stdlib.h>
+#include <string.h>
+#include "sqlite3.h"
+#include "bbdd.h"
+#include "pelicula.h"
+#include "usuario.h"
 
+// Función para inicializar la base de datos
 int inicializarBBDD(sqlite3 **db) {
-    int result;
-
-    // Intentar abrir la base de datos
-    result = sqlite3_open(NOMBRE_BBDD, db);
-
-    if (result != SQLITE_OK) {
-        fprintf(stderr, "\033[1;31mError al conectar con la base de datos: %s\033[0m\n", sqlite3_errmsg(*db));
-        return result;
+    int rc = sqlite3_open("DeustNetflix.db", db);
+    if (rc) {
+        fprintf(stderr, "\033[1;31mNo se puede abrir la base de datos: %s\033[0m\n", sqlite3_errmsg(*db));
+        return rc;
     }
-
-    printf("\033[1;32mConexión a la base de datos establecida correctamente\033[0m");
-    fflush(stdout);
-
+    printf("\033[1;32mBase de datos inicializada correctamente\033[0m\n");
     return SQLITE_OK;
 }
 
+// Función para crear tablas
 int crearTablas(sqlite3 *db) {
-    char *errMsg = NULL;
-    int result;
+    char *errMsg = 0;
+    const char *sql_peliculas =
+        "CREATE TABLE IF NOT EXISTS Peliculas ("
+        "ID INTEGER PRIMARY KEY AUTOINCREMENT,"
+        "Titulo TEXT NOT NULL UNIQUE,"
+        "Genero TEXT,"
+        "Duracion INTEGER,"
+        "Reparto TEXT);";
 
-    // SQL para crear la tabla Pelicula
-    const char *sqlPeliculas =
-        "CREATE TABLE IF NOT EXISTS Pelicula ("
-        "titulo TEXT PRIMARY KEY, "
-        "genero TEXT, "
-        "duracion INTEGER, "
-        "reparto TEXT"
-        ");";
+    const char *sql_usuarios =
+        "CREATE TABLE IF NOT EXISTS Usuarios ("
+        "ID INTEGER PRIMARY KEY AUTOINCREMENT,"
+        "Nombre TEXT NOT NULL,"
+        "Apellido TEXT,"
+        "Email TEXT UNIQUE,"
+        "NickName TEXT UNIQUE,"
+        "Pais TEXT,"
+        "Contrasenia TEXT);";
 
-    // SQL para crear la tabla Usuario
-    const char *sqlUsuarios =
-        "CREATE TABLE IF NOT EXISTS Usuario ("
-        "nombre TEXT, "
-        "apellido TEXT, "
-        "email TEXT PRIMARY KEY, "
-        "nickname TEXT, "
-        "pais TEXT, "
-        "contrasenia TEXT"
-        ");";
+    const char *sql_administradores =
+        "CREATE TABLE IF NOT EXISTS Administradores ("
+        "ID INTEGER PRIMARY KEY AUTOINCREMENT,"
+        "Email TEXT UNIQUE,"
+        "Contrasenia TEXT);";
 
-    // Ejecutar la consulta para crear tabla Pelicula
-    result = sqlite3_exec(db, sqlPeliculas, NULL, NULL, &errMsg);
 
-    if (result != SQLITE_OK) {
-        fprintf(stderr, "\033[1;31mError al crear la tabla Pelicula: %s\033[0m\n", errMsg);
+
+    int rc = sqlite3_exec(db, sql_peliculas, 0, 0, &errMsg);
+    if (rc != SQLITE_OK) {
+        fprintf(stderr, "\033[1;31mError creando tabla Peliculas: %s\033[0m\n", errMsg);
         sqlite3_free(errMsg);
-        return result;
+        return rc;
     }
 
-    printf("\033[1;32mTabla Pelicula creada correctamente\033[0m\n");
-    fflush(stdout);
-
-    // Ejecutar la consulta para crear tabla Usuario
-    result = sqlite3_exec(db, sqlUsuarios, NULL, NULL, &errMsg);
-
-    if (result != SQLITE_OK) {
-        fprintf(stderr, "\033[1;31mError al crear la tabla Usuario: %s \033[0m\n", errMsg);
+    rc = sqlite3_exec(db, sql_usuarios, 0, 0, &errMsg);
+    if (rc != SQLITE_OK) {
+        fprintf(stderr, "\033[1;31mError creando tabla Usuarios: %s\033[0m\n", errMsg);
         sqlite3_free(errMsg);
-        return result;
+        return rc;
     }
 
-    printf("\033[1;32mTabla Usuario creada correctamente\033[0m\n");
-    fflush(stdout);
-
-    // Verificar si las tablas existen
-    if (existeTabla(db, "Pelicula") != 1 || existeTabla(db, "Usuario") != 1) {
-        fprintf(stderr, "\033[1;31mError: Una o ambas tablas no existen a pesar de intentar crearlas\033[0m\n");
-        return -1;
-    }
-
-    return SQLITE_OK;
-}
-
-int insertarPelicula(sqlite3 *db, Pelicula p) {
-    char *errMsg = NULL;
-    char sql[500];
-    int result;
-
-    // Crear versiones seguras de las cadenas para SQL (escapar comillas simples)
-    char titulo_seguro[50];
-    char genero_seguro[50];
-    char reparto_seguro[50];
-
-    int i, j;
-
-    // Escapar comillas simples en título
-    for (i = 0, j = 0; p.titulo[i] && j < sizeof(titulo_seguro) - 1; i++, j++) {
-        if (p.titulo[i] == '\'') {
-            titulo_seguro[j++] = '\''; // Duplicar comilla simple para escaparla
-            if (j < sizeof(titulo_seguro) - 1)
-                titulo_seguro[j] = '\'';
-        } else {
-            titulo_seguro[j] = p.titulo[i];
-        }
-    }
-    titulo_seguro[j] = '\0';
-
-    // Escapar comillas simples en género
-    for (i = 0, j = 0; p.genero[i] && j < sizeof(genero_seguro) - 1; i++, j++) {
-        if (p.genero[i] == '\'') {
-            genero_seguro[j++] = '\'';
-            if (j < sizeof(genero_seguro) - 1)
-                genero_seguro[j] = '\'';
-        } else {
-            genero_seguro[j] = p.genero[i];
-        }
-    }
-    genero_seguro[j] = '\0';
-
-    // Escapar comillas simples en reparto
-    for (i = 0, j = 0; p.Reparto[i] && j < sizeof(reparto_seguro) - 1; i++, j++) {
-        if (p.Reparto[i] == '\'') {
-            reparto_seguro[j++] = '\'';
-            if (j < sizeof(reparto_seguro) - 1)
-                reparto_seguro[j] = '\'';
-        } else {
-            reparto_seguro[j] = p.Reparto[i];
-        }
-    }
-    reparto_seguro[j] = '\0';
-
-    // Preparar la consulta SQL con los valores escapados
-    sprintf(sql, "INSERT OR REPLACE INTO Pelicula (titulo, genero, duracion, reparto) "
-            "VALUES ('%s', '%s', %d, '%s');",
-            titulo_seguro, genero_seguro, p.duracion, reparto_seguro);
-
-    // Ejecutar la consulta SQL
-    result = sqlite3_exec(db, sql, NULL, NULL, &errMsg);
-
-    if (result != SQLITE_OK) {
-        fprintf(stderr, "\033[1;31mError al insertar película '%s': %s\nConsulta SQL: %s\033[0m\n",
-                p.titulo, errMsg, sql);
+    rc = sqlite3_exec(db, sql_administradores, 0, 0, &errMsg);
+    if (rc != SQLITE_OK) {
+        fprintf(stderr, "\033[1;31mError creando tabla Administradores: %s\033[0m\n", errMsg);
         sqlite3_free(errMsg);
-        return result;
+        return rc;
     }
 
-    printf("\033[1;32mPelícula '%s' insertada correctamente en la base de datos\033[0m\n", p.titulo);
-    fflush(stdout);
-
-    return SQLITE_OK;
-}
-int insertarUsuario(sqlite3 *db, Usuario u) {
-    char *errMsg = NULL;
-    char sql[500];
-    int result;
-
-    // Crear versiones seguras de las cadenas para SQL (escapar comillas simples)
-    char nombre_seguro[50];
-    char apellido_seguro[50];
-    char email_seguro[50];
-    char nickname_seguro[50];
-    char pais_seguro[50];
-    char contrasenia_seguro[50];
-
-    int i, j;
-
-    // Escapar comillas simples en nombre
-    for (i = 0, j = 0; u.Nombre[i] && j < sizeof(nombre_seguro) - 1; i++, j++) {
-        if (u.Nombre[i] == '\'') {
-            nombre_seguro[j++] = '\''; // Duplicar comilla simple para escaparla
-            if (j < sizeof(nombre_seguro) - 1)
-                nombre_seguro[j] = '\'';
-        } else {
-            nombre_seguro[j] = u.Nombre[i];
-        }
-    }
-    nombre_seguro[j] = '\0';
-
-    // Escapar comillas simples en apellido
-    for (i = 0, j = 0; u.Apellido[i] && j < sizeof(apellido_seguro) - 1; i++, j++) {
-        if (u.Apellido[i] == '\'') {
-            apellido_seguro[j++] = '\'';
-            if (j < sizeof(apellido_seguro) - 1)
-                apellido_seguro[j] = '\'';
-        } else {
-            apellido_seguro[j] = u.Apellido[i];
-        }
-    }
-    apellido_seguro[j] = '\0';
-
-    // Escapar comillas simples en email
-    for (i = 0, j = 0; u.Email[i] && j < sizeof(email_seguro) - 1; i++, j++) {
-        if (u.Email[i] == '\'') {
-            email_seguro[j++] = '\'';
-            if (j < sizeof(email_seguro) - 1)
-                email_seguro[j] = '\'';
-        } else {
-            email_seguro[j] = u.Email[i];
-        }
-    }
-    email_seguro[j] = '\0';
-
-    // Escapar comillas simples en nickname
-    for (i = 0, j = 0; u.NickName[i] && j < sizeof(nickname_seguro) - 1; i++, j++) {
-        if (u.NickName[i] == '\'') {
-            nickname_seguro[j++] = '\'';
-            if (j < sizeof(nickname_seguro) - 1)
-                nickname_seguro[j] = '\'';
-        } else {
-            nickname_seguro[j] = u.NickName[i];
-        }
-    }
-    nickname_seguro[j] = '\0';
-
-    // Escapar comillas simples en país
-    for (i = 0, j = 0; u.Pais[i] && j < sizeof(pais_seguro) - 1; i++, j++) {
-        if (u.Pais[i] == '\'') {
-            pais_seguro[j++] = '\'';
-            if (j < sizeof(pais_seguro) - 1)
-                pais_seguro[j] = '\'';
-        } else {
-            pais_seguro[j] = u.Pais[i];
-        }
-    }
-    pais_seguro[j] = '\0';
-
-    // Escapar comillas simples en contraseña
-    for (i = 0, j = 0; u.Contrasenia[i] && j < sizeof(contrasenia_seguro) - 1; i++, j++) {
-        if (u.Contrasenia[i] == '\'') {
-            contrasenia_seguro[j++] = '\'';
-            if (j < sizeof(contrasenia_seguro) - 1)
-                contrasenia_seguro[j] = '\'';
-        } else {
-            contrasenia_seguro[j] = u.Contrasenia[i];
-        }
-    }
-    contrasenia_seguro[j] = '\0';
-
-    // Preparar la consulta SQL con los valores escapados
-    sprintf(sql, "INSERT OR REPLACE INTO Usuario (nombre, apellido, email, nickname, pais, contrasenia) "
-            "VALUES ('%s', '%s', '%s', '%s', '%s', '%s');",
-            nombre_seguro, apellido_seguro, email_seguro, nickname_seguro, pais_seguro, contrasenia_seguro);
-
-    // Ejecutar la consulta SQL
-    result = sqlite3_exec(db, sql, NULL, NULL, &errMsg);
-
-    if (result != SQLITE_OK) {
-        fprintf(stderr, "\033[1;31mError al insertar usuario '%s': %s\nConsulta SQL: %s\033[0m\n",
-                u.Email, errMsg, sql);
-        sqlite3_free(errMsg);
-        return result;
-    }
-
-    printf("\033[1;32mUsuario '%s %s' (%s) insertado correctamente en la base de datos\033[0m\n",
-           u.Nombre, u.Apellido, u.Email);
-    fflush(stdout);
-
+    printf("\033[1;32mTablas creadas correctamente\033[0m\n");
     return SQLITE_OK;
 }
 
-int obtenerPeliculas(sqlite3 *db, Videoclub *v) {
-    sqlite3_stmt *stmt;
-    int result;
-
-    // Inicializar el videoclub si es necesario
-    if (v->aPeliculas != NULL) {
-        free(v->aPeliculas);
-        v->aPeliculas = NULL;
-        v->numPeliculas = 0;
-    }
-
-    // Preparar la consulta SQL
-    result = sqlite3_prepare_v2(db, "SELECT titulo, genero, duracion, reparto FROM Pelicula;", -1, &stmt, NULL);
-
-    if (result != SQLITE_OK) {
-        fprintf(stderr, "\033[1;31mError al preparar consulta: %s\033[0m\n", sqlite3_errmsg(db));
-        return result;
-    }
-
-    // Recorrer los resultados
-    while ((result = sqlite3_step(stmt)) == SQLITE_ROW) {
-        Pelicula p;
-        strcpy(p.titulo, (const char *)sqlite3_column_text(stmt, 0));
-        strcpy(p.genero, (const char *)sqlite3_column_text(stmt, 1));
-        p.duracion = sqlite3_column_int(stmt, 2);
-        strcpy(p.Reparto, (const char *)sqlite3_column_text(stmt, 3));
-
-        // Añadir la película al videoclub
-        if (v->aPeliculas == NULL) {
-            v->aPeliculas = (Pelicula*)malloc(sizeof(Pelicula));
-        } else {
-            v->aPeliculas = (Pelicula*)realloc(v->aPeliculas, (v->numPeliculas + 1) * sizeof(Pelicula));
-        }
-
-        if (v->aPeliculas == NULL) {
-            fprintf(stderr, "\033[1;31mError de memoria al obtener películas\033[0m\n");
-            sqlite3_finalize(stmt);
-            return -1;
-        }
-
-        v->aPeliculas[v->numPeliculas] = p;
-        v->numPeliculas++;
-    }
-
-    // Liberar recursos
-    sqlite3_finalize(stmt);
-
-    if (result != SQLITE_DONE) {
-        fprintf(stderr, "Error al obtener películas: %s\n", sqlite3_errmsg(db));
-        return result;
-    }
-
-    printf("Se han obtenido %d películas de la base de datos\n", v->numPeliculas);
-    fflush(stdout);
-
-    return SQLITE_OK;
-}
-
-int obtenerUsuarios(sqlite3 *db, ListaUsuarios *lu) {
-    sqlite3_stmt *stmt;
-    int result;
-
-    // Inicializar la lista de usuarios si es necesario
-    if (lu->aUsuarios != NULL) {
-        free(lu->aUsuarios);
-        lu->aUsuarios = NULL;
-        lu->numUsuarios = 0;
-    }
-
-    // Preparar la consulta SQL
-    result = sqlite3_prepare_v2(db, "SELECT nombre, apellido, email, nickname, pais, contrasenia FROM Usuario;", -1, &stmt, NULL);
-
-    if (result != SQLITE_OK) {
-        fprintf(stderr, "Error al preparar consulta: %s\n", sqlite3_errmsg(db));
-        return result;
-    }
-
-    // Recorrer los resultados
-    while ((result = sqlite3_step(stmt)) == SQLITE_ROW) {
-        Usuario u;
-        strcpy(u.Nombre, (const char *)sqlite3_column_text(stmt, 0));
-        strcpy(u.Apellido, (const char *)sqlite3_column_text(stmt, 1));
-        strcpy(u.Email, (const char *)sqlite3_column_text(stmt, 2));
-        strcpy(u.NickName, (const char *)sqlite3_column_text(stmt, 3));
-        strcpy(u.Pais, (const char *)sqlite3_column_text(stmt, 4));
-        strcpy(u.Contrasenia, (const char *)sqlite3_column_text(stmt, 5));
-
-        // Añadir el usuario a la lista
-        if (lu->aUsuarios == NULL) {
-            lu->aUsuarios = (Usuario*)malloc(sizeof(Usuario));
-        } else {
-            lu->aUsuarios = (Usuario*)realloc(lu->aUsuarios, (lu->numUsuarios + 1) * sizeof(Usuario));
-        }
-
-        if (lu->aUsuarios == NULL) {
-            fprintf(stderr, "Error de memoria al obtener usuarios\n");
-            sqlite3_finalize(stmt);
-            return -1;
-        }
-
-        lu->aUsuarios[lu->numUsuarios] = u;
-        lu->numUsuarios++;
-    }
-
-    // Liberar recursos
-    sqlite3_finalize(stmt);
-
-    if (result != SQLITE_DONE) {
-        fprintf(stderr, "Error al obtener usuarios: %s\n", sqlite3_errmsg(db));
-        return result;
-    }
-
-    printf("Se han obtenido %d usuarios de la base de datos\n", lu->numUsuarios);
-    fflush(stdout);
-
-    return SQLITE_OK;
-}
-
-int eliminarPeliculaBD(sqlite3 *db, char *titulo) {
-    char *errMsg = NULL;
-    char sql[200];
-    int result;
-
-    // Limpiar cadenas para evitar problemas con comillas en SQL
-    char tituloLimpio[50];
-    strcpy(tituloLimpio, titulo);
-    for (int i = 0; tituloLimpio[i]; i++) if (tituloLimpio[i] == '\'') tituloLimpio[i] = '"';
-
-    // Preparar la consulta SQL
-    sprintf(sql, "DELETE FROM Pelicula WHERE titulo = '%s';", tituloLimpio);
-
-    // Ejecutar la consulta SQL
-    result = sqlite3_exec(db, sql, NULL, NULL, &errMsg);
-
-    if (result != SQLITE_OK) {
-        fprintf(stderr, "Error al eliminar película: %s\n", errMsg);
-        sqlite3_free(errMsg);
-        return result;
-    }
-
-    printf("Película '%s' eliminada correctamente de la base de datos\n", titulo);
-    fflush(stdout);
-
-    return SQLITE_OK;
-}
-
-int eliminarUsuarioBD(sqlite3 *db, char *email) {
-    char *errMsg = NULL;
-    char sql[200];
-    int result;
-
-    // Limpiar cadenas para evitar problemas con comillas en SQL
-    char emailLimpio[50];
-    strcpy(emailLimpio, email);
-    for (int i = 0; emailLimpio[i]; i++) if (emailLimpio[i] == '\'') emailLimpio[i] = '"';
-
-    // Preparar la consulta SQL
-    sprintf(sql, "DELETE FROM Usuario WHERE email = '%s';", emailLimpio);
-
-    // Ejecutar la consulta SQL
-    result = sqlite3_exec(db, sql, NULL, NULL, &errMsg);
-
-    if (result != SQLITE_OK) {
-        fprintf(stderr, "Error al eliminar usuario: %s\n", errMsg);
-        sqlite3_free(errMsg);
-        return result;
-    }
-
-    printf("Usuario con email '%s' eliminado correctamente de la base de datos\n", email);
-    fflush(stdout);
-
-    return SQLITE_OK;
-}
-
-int existeTabla(sqlite3 *db, const char *nombreTabla) {
-    sqlite3_stmt *stmt;
-    int result;
-    int existe = 0;
-
-    // Preparar la consulta SQL para verificar si la tabla existe
-    char sql[200];
-    sprintf(sql, "SELECT name FROM sqlite_master WHERE type='table' AND name='%s';", nombreTabla);
-
-    result = sqlite3_prepare_v2(db, sql, -1, &stmt, NULL);
-
-    if (result != SQLITE_OK) {
-        fprintf(stderr, "Error al verificar existencia de tabla: %s\n", sqlite3_errmsg(db));
-        return -1;
-    }
-
-    // Ejecutar la consulta
-    if (sqlite3_step(stmt) == SQLITE_ROW) {
-        existe = 1; // La tabla existe
-    }
-
-    // Liberar recursos
-    sqlite3_finalize(stmt);
-
-    return existe;
-}
-
-int cargarDatosCSVaBD(sqlite3 *db, const char *archivoPeliculas, const char *archivoUsuarios) {
+// Función para cargar datos desde CSV a la base de datos
+int cargarDatosCSVaBD(sqlite3 **db, const char *archivoPeliculas, const char *archivoUsuarios) {
     FILE *fPeliculas = fopen(archivoPeliculas, "r");
     FILE *fUsuarios = fopen(archivoUsuarios, "r");
     int peliculasCargadas = 0;
@@ -463,134 +80,350 @@ int cargarDatosCSVaBD(sqlite3 *db, const char *archivoPeliculas, const char *arc
     char *errMsg = NULL;
     int result;
 
-    // Iniciar transacción para mejorar el rendimiento
-    result = sqlite3_exec(db, "BEGIN TRANSACTION", NULL, NULL, &errMsg);
+    // Iniciar transacción
+    result = sqlite3_exec(*db, "BEGIN TRANSACTION", NULL, NULL, &errMsg);
     if (result != SQLITE_OK) {
-        fprintf(stderr, "Error al iniciar transacción: %s\n", errMsg);
+        fprintf(stderr, "\033[1;31mError al iniciar transacción: %s\033[0m\n", errMsg);
         sqlite3_free(errMsg);
+        return result;
+    }
+
+    // Preparar declaración para insertar películas
+    sqlite3_stmt *stmt_pelicula;
+    const char *sql_pelicula = "INSERT INTO Peliculas (Titulo, Genero, Duracion, Reparto) VALUES (?, ?, ?, ?)";
+    result = sqlite3_prepare_v2(*db, sql_pelicula, -1, &stmt_pelicula, NULL);
+    if (result != SQLITE_OK) {
+        fprintf(stderr, "\033[1;31mError preparando declaración de películas\033[0m\n");
+        return result;
+    }
+
+    // Preparar declaración para insertar usuarios
+    sqlite3_stmt *stmt_usuario;
+    const char *sql_usuario = "INSERT INTO Usuarios (Nombre, Apellido, Email, NickName, Pais, Contrasenia) VALUES (?, ?, ?, ?, ?, ?)";
+    result = sqlite3_prepare_v2(*db, sql_usuario, -1, &stmt_usuario, NULL);
+    if (result != SQLITE_OK) {
+        fprintf(stderr, "\033[1;31mError preparando declaración de usuarios\033[0m\n");
         return result;
     }
 
     // Cargar películas
     if (fPeliculas != NULL) {
-        char linea[200];
-        Pelicula pelicula;
-
-        printf("Comenzando a cargar películas desde %s...\n", archivoPeliculas);
-        fflush(stdout);
-
+        char linea[300];
         while (fgets(linea, sizeof(linea), fPeliculas)) {
-            // Eliminar el salto de línea
+            // Eliminar salto de línea
             linea[strcspn(linea, "\r\n")] = '\0';
 
-            if (strlen(linea) < 5) continue; // Ignorar líneas vacías o muy cortas
+            if (strlen(linea) < 5) continue;
 
-            // Reiniciar estructuras para evitar datos parciales
-            memset(&pelicula, 0, sizeof(Pelicula));
+            char *titulo = strtok(linea, ";");
+            char *genero = strtok(NULL, ";");
+            char *duracion_str = strtok(NULL, ";");
+            char *reparto = strtok(NULL, ";");
 
-            char *token = strtok(linea, ";");
-            if (token != NULL) {
-                strncpy(pelicula.titulo, token, sizeof(pelicula.titulo) - 1);
+            if (titulo && genero && duracion_str && reparto) {
+                int duracion = atoi(duracion_str);
 
-                token = strtok(NULL, ";");
-                if (token != NULL) strncpy(pelicula.genero, token, sizeof(pelicula.genero) - 1);
+                sqlite3_reset(stmt_pelicula);
+                sqlite3_bind_text(stmt_pelicula, 1, titulo, -1, SQLITE_STATIC);
+                sqlite3_bind_text(stmt_pelicula, 2, genero, -1, SQLITE_STATIC);
+                sqlite3_bind_int(stmt_pelicula, 3, duracion);
+                sqlite3_bind_text(stmt_pelicula, 4, reparto, -1, SQLITE_STATIC);
 
-                token = strtok(NULL, ";");
-                if (token != NULL) pelicula.duracion = atoi(token);
-
-                token = strtok(NULL, ";");
-                if (token != NULL) strncpy(pelicula.Reparto, token, sizeof(pelicula.Reparto) - 1);
-
-                // Insertar película en la BD con manejo de errores
-                int resultInsert = insertarPelicula(db, pelicula);
-                if (resultInsert == SQLITE_OK) {
+                result = sqlite3_step(stmt_pelicula);
+                if (result == SQLITE_DONE) {
                     peliculasCargadas++;
-                    printf("Película insertada: %s\n", pelicula.titulo);
                 } else {
-                    fprintf(stderr, "Error al insertar película '%s': %s\n",
-                            pelicula.titulo, sqlite3_errmsg(db));
+                    fprintf(stderr, "\033[1;31mError insertando película: %s\033[0m\n", titulo);
                 }
             }
         }
-
         fclose(fPeliculas);
-        printf("Finalizada la carga de películas. Total: %d\n", peliculasCargadas);
-        fflush(stdout);
-    } else {
-        printf("No se pudo abrir el archivo de películas: %s\n", archivoPeliculas);
-        fflush(stdout);
+        printf("\033[1;32mPelículas cargadas: %d\033[0m\n", peliculasCargadas);
     }
 
     // Cargar usuarios
     if (fUsuarios != NULL) {
-        char linea[200];
-        Usuario usuario;
-
-        printf("Comenzando a cargar usuarios desde %s...\n", archivoUsuarios);
-        fflush(stdout);
+        char linea[300];
 
         while (fgets(linea, sizeof(linea), fUsuarios)) {
-            // Eliminar el salto de línea
             linea[strcspn(linea, "\r\n")] = '\0';
 
-            if (strlen(linea) < 5) continue; // Ignorar líneas vacías o muy cortas
+            if (strlen(linea) < 5) continue;
 
-            // Reiniciar estructuras para evitar datos parciales
-            memset(&usuario, 0, sizeof(Usuario));
+            char *nombre = strtok(linea, ";");
+            char *apellido = strtok(NULL, ";");
+            char *email = strtok(NULL, ";");
+            char *nickname = strtok(NULL, ";");
+            char *pais = strtok(NULL, ";");
+            char *contrasenia = strtok(NULL, ";");
 
-            char *token = strtok(linea, ";");
-            if (token != NULL) {
-                strncpy(usuario.Nombre, token, sizeof(usuario.Nombre) - 1);
+            if (nombre && apellido && email && nickname && pais && contrasenia) {
+                sqlite3_reset(stmt_usuario);
+                sqlite3_bind_text(stmt_usuario, 1, nombre, -1, SQLITE_STATIC);
+                sqlite3_bind_text(stmt_usuario, 2, apellido, -1, SQLITE_STATIC);
+                sqlite3_bind_text(stmt_usuario, 3, email, -1, SQLITE_STATIC);
+                sqlite3_bind_text(stmt_usuario, 4, nickname, -1, SQLITE_STATIC);
+                sqlite3_bind_text(stmt_usuario, 5, pais, -1, SQLITE_STATIC);
+                sqlite3_bind_text(stmt_usuario, 6, contrasenia, -1, SQLITE_STATIC);
 
-                token = strtok(NULL, ";");
-                if (token != NULL) strncpy(usuario.Apellido, token, sizeof(usuario.Apellido) - 1);
-
-                token = strtok(NULL, ";");
-                if (token != NULL) strncpy(usuario.Email, token, sizeof(usuario.Email) - 1);
-
-                token = strtok(NULL, ";");
-                if (token != NULL) strncpy(usuario.NickName, token, sizeof(usuario.NickName) - 1);
-
-                token = strtok(NULL, ";");
-                if (token != NULL) strncpy(usuario.Pais, token, sizeof(usuario.Pais) - 1);
-
-                token = strtok(NULL, ";");
-                if (token != NULL) strncpy(usuario.Contrasenia, token, sizeof(usuario.Contrasenia) - 1);
-
-                // Insertar usuario en la BD con manejo de errores
-                int resultInsert = insertarUsuario(db, usuario);
-                if (resultInsert == SQLITE_OK) {
+                result = sqlite3_step(stmt_usuario);
+                if (result == SQLITE_DONE) {
                     usuariosCargados++;
-                    printf("Usuario insertado: %s %s (%s)\n",
-                           usuario.Nombre, usuario.Apellido, usuario.Email);
                 } else {
-                    fprintf(stderr, "Error al insertar usuario '%s': %s\n",
-                            usuario.Email, sqlite3_errmsg(db));
+                    fprintf(stderr, "\033[1;31mError insertando usuario: %s\033[0m\n", email);
                 }
             }
         }
-
         fclose(fUsuarios);
-        printf("Finalizada la carga de usuarios. Total: %d\n", usuariosCargados);
-        fflush(stdout);
-    } else {
-        printf("No se pudo abrir el archivo de usuarios: %s\n", archivoUsuarios);
-        fflush(stdout);
+        printf("\033[1;32mUsuarios cargados: %d\033[0m\n", usuariosCargados);
     }
 
-    // Confirmar la transacción
-    result = sqlite3_exec(db, "COMMIT", NULL, NULL, &errMsg);
+    // Finalizar declaraciones
+    sqlite3_finalize(stmt_pelicula);
+    sqlite3_finalize(stmt_usuario);
+
+    // Confirmar transacción
+    result = sqlite3_exec(*db, "COMMIT", NULL, NULL, &errMsg);
     if (result != SQLITE_OK) {
-        fprintf(stderr, "Error al confirmar transacción: %s\n", errMsg);
+        fprintf(stderr, "\033[1;31mError al confirmar transacción: %s\033[0m\n", errMsg);
         sqlite3_free(errMsg);
-        // Intentar rollback
-        sqlite3_exec(db, "ROLLBACK", NULL, NULL, NULL);
+        sqlite3_exec(*db, "ROLLBACK", NULL, NULL, NULL);
         return result;
     }
 
-    printf("Carga de datos completada: %d películas y %d usuarios cargados en la BD\n",
-           peliculasCargadas, usuariosCargados);
-    fflush(stdout);
-
+    printf("\033[1;32mCarga de datos completada\033[0m\n");
     return SQLITE_OK;
 }
+
+int crearTablaPeliculasVistas(sqlite3 *db) {
+    char *errMsg = 0;
+    const char *sql_peliculas_vistas =
+        "CREATE TABLE IF NOT EXISTS PeliculasVistas ("
+        "ID INTEGER PRIMARY KEY AUTOINCREMENT,"
+        "UsuarioID INTEGER,"
+        "PeliculaID INTEGER,"
+        "FOREIGN KEY (UsuarioID) REFERENCES Usuarios(ID),"
+        "FOREIGN KEY (PeliculaID) REFERENCES Peliculas(ID),"
+        "UNIQUE(UsuarioID, PeliculaID));";
+
+    int rc = sqlite3_exec(db, sql_peliculas_vistas, 0, 0, &errMsg);
+    if (rc != SQLITE_OK) {
+        fprintf(stderr, "\033[1;31mError creando tabla PeliculasVistas: %s\033[0m\n", errMsg);
+        sqlite3_free(errMsg);
+        return rc;
+    }
+
+    printf("\033[1;32mTabla PeliculasVistas creada correctamente\033[0m\n");
+    return SQLITE_OK;
+}
+
+// Función para registrar una película como vista por un usuario
+int registrarPeliculaVista(sqlite3 *db, int usuarioID, int peliculaID) {
+    sqlite3_stmt *stmt;
+    const char *sql = "INSERT OR IGNORE INTO PeliculasVistas (UsuarioID, PeliculaID) "
+                     "VALUES (?, ?)";
+
+    int rc = sqlite3_prepare_v2(db, sql, -1, &stmt, NULL);
+    if (rc != SQLITE_OK) {
+        fprintf(stderr, "\033[1;31mError preparando la consulta: %s\033[0m\n", sqlite3_errmsg(db));
+        return rc;
+    }
+
+    sqlite3_bind_int(stmt, 1, usuarioID);
+    sqlite3_bind_int(stmt, 2, peliculaID);
+
+    rc = sqlite3_step(stmt);
+    if (rc != SQLITE_DONE) {
+        fprintf(stderr, "\033[1;31mError registrando película vista: %s\033[0m\n", sqlite3_errmsg(db));
+    }
+
+    sqlite3_finalize(stmt);
+    return (rc == SQLITE_DONE) ? SQLITE_OK : rc;
+}
+
+// Función para obtener las películas vistas por un usuario
+int obtenerPeliculasVistas(sqlite3 *db, int usuarioID, void (*callback)(void*, const char*, const char*), void *userData) {
+    sqlite3_stmt *stmt;
+    const char *sql = "SELECT p.Titulo, p.Genero "
+                     "FROM PeliculasVistas pv "
+                     "JOIN Peliculas p ON pv.PeliculaID = p.ID "
+                     "WHERE pv.UsuarioID = ?";
+
+    int rc = sqlite3_prepare_v2(db, sql, -1, &stmt, NULL);
+    if (rc != SQLITE_OK) {
+        fprintf(stderr, "\033[1;31mError preparando la consulta: %s\033[0m\n", sqlite3_errmsg(db));
+        return rc;
+    }
+
+    sqlite3_bind_int(stmt, 1, usuarioID);
+
+    while ((rc = sqlite3_step(stmt)) == SQLITE_ROW) {
+        const char *titulo = (const char*)sqlite3_column_text(stmt, 0);
+        const char *genero = (const char*)sqlite3_column_text(stmt, 1);
+        callback(userData, titulo, genero);
+    }
+
+    sqlite3_finalize(stmt);
+    return (rc == SQLITE_DONE) ? SQLITE_OK : rc;
+}
+
+// Función para obtener el ID de usuario de la base de datos
+int obtenerUsuarioID(sqlite3 *db, const char *email) {
+    sqlite3_stmt *stmt;
+    const char *sql = "SELECT ID FROM Usuarios WHERE Email = ?";
+    int usuarioID = -1;
+
+    int rc = sqlite3_prepare_v2(db, sql, -1, &stmt, NULL);
+    if (rc != SQLITE_OK) {
+        fprintf(stderr, "\033[1;31mError preparando la consulta: %s\033[0m\n", sqlite3_errmsg(db));
+        return -1;
+    }
+
+    sqlite3_bind_text(stmt, 1, email, -1, SQLITE_STATIC);
+
+    if (sqlite3_step(stmt) == SQLITE_ROW) {
+        usuarioID = sqlite3_column_int(stmt, 0);
+    }
+
+    sqlite3_finalize(stmt);
+    return usuarioID;
+}
+
+// Función para obtener el ID de una película de la base de datos
+int obtenerPeliculaID(sqlite3 *db, const char *titulo) {
+    sqlite3_stmt *stmt;
+    const char *sql = "SELECT ID FROM Peliculas WHERE Titulo = ?";
+    int peliculaID = -1;
+
+    int rc = sqlite3_prepare_v2(db, sql, -1, &stmt, NULL);
+    if (rc != SQLITE_OK) {
+        fprintf(stderr, "\033[1;31mError preparando la consulta: %s\033[0m\n", sqlite3_errmsg(db));
+        return -1;
+    }
+
+    sqlite3_bind_text(stmt, 1, titulo, -1, SQLITE_STATIC);
+
+    if (sqlite3_step(stmt) == SQLITE_ROW) {
+        peliculaID = sqlite3_column_int(stmt, 0);
+    }
+
+    sqlite3_finalize(stmt);
+    return peliculaID;
+}
+
+int insertarUsuarioEnBD(Usuario *u, sqlite3 *db) {
+	  sqlite3_stmt *stmt;
+	    int rc;
+    // Validación de parámetros
+    if (u == NULL || db == NULL) {
+        fprintf(stderr, "Error: Parámetros nulos\n");
+        return -1;
+    }
+    const char *sql = "INSERT INTO usuarios (Nombre, Apellido, Email, NickName, Pais, Contrasenia) VALUES (?, ?, ?, ?, ?, ?);";
+    rc = sqlite3_prepare_v2(db, sql, -1, &stmt, NULL);
+    if (rc != SQLITE_OK) {
+        fprintf(stderr, "Error preparando la sentencia SQL: %s\n", sqlite3_errmsg(db));
+        return rc;
+    }
+    rc = sqlite3_bind_text(stmt, 1, u->Nombre, -1, SQLITE_STATIC);
+    if (rc != SQLITE_OK) {
+        fprintf(stderr, "Error vinculando Nombre: %s\n", sqlite3_errmsg(db));
+        sqlite3_finalize(stmt);
+        return rc;
+    }
+    rc = sqlite3_bind_text(stmt, 2, u->Apellido, -1, SQLITE_STATIC);
+    if (rc != SQLITE_OK) {
+        fprintf(stderr, "Error vinculando Apellido: %s\n", sqlite3_errmsg(db));
+        sqlite3_finalize(stmt);
+        return rc;
+    }
+    rc = sqlite3_bind_text(stmt, 3, u->Email, -1, SQLITE_STATIC);
+    if (rc != SQLITE_OK) {
+        fprintf(stderr, "Error vinculando Email: %s\n", sqlite3_errmsg(db));
+        sqlite3_finalize(stmt);
+        return rc;
+    }
+
+    rc = sqlite3_bind_text(stmt, 4, u->NickName, -1, SQLITE_STATIC);
+    if (rc != SQLITE_OK) {
+        fprintf(stderr, "Error vinculando NickName: %s\n", sqlite3_errmsg(db));
+        sqlite3_finalize(stmt);
+        return rc;
+    }
+    rc = sqlite3_bind_text(stmt, 5, u->Pais, -1, SQLITE_STATIC);
+    if (rc != SQLITE_OK) {
+        fprintf(stderr, "Error vinculando Pais: %s\n", sqlite3_errmsg(db));
+        sqlite3_finalize(stmt);
+        return rc;
+    }
+    rc = sqlite3_bind_text(stmt, 6, u->Contrasenia, -1, SQLITE_STATIC);
+    if (rc != SQLITE_OK) {
+        fprintf(stderr, "Error vinculando Contrasenia: %s\n", sqlite3_errmsg(db));
+        sqlite3_finalize(stmt);
+        return rc;
+    }
+    rc = sqlite3_step(stmt);
+    if (rc != SQLITE_DONE) {
+        fprintf(stderr, "Error insertando usuario: %s\n", sqlite3_errmsg(db));
+        sqlite3_finalize(stmt);
+        return rc;
+    }
+    sqlite3_finalize(stmt);
+
+    printf("Usuario insertado con éxito\n");
+    return SQLITE_OK;
+}
+
+int insertarPeliculaEnBD(Pelicula *p, sqlite3 *db) {
+	 sqlite3_stmt *stmt;
+	    int rc;
+    // Validación de parámetros
+    if (p == NULL || db == NULL) {
+        fprintf(stderr, "Error: Parámetros nulos\n");
+        return -1;
+    }    const char *sql = "INSERT INTO peliculas (titulo, genero, duracion, Reparto) VALUES (?, ?, ?, ?);";
+
+    rc = sqlite3_prepare_v2(db, sql, -1, &stmt, NULL);
+    if (rc != SQLITE_OK) {
+        fprintf(stderr, "Error preparando la sentencia SQL: %s\n", sqlite3_errmsg(db));
+        return rc;
+    }
+    rc = sqlite3_bind_text(stmt, 1, p->titulo, -1, SQLITE_STATIC);
+    if (rc != SQLITE_OK) {
+        fprintf(stderr, "Error vinculando titulo: %s\n", sqlite3_errmsg(db));
+        sqlite3_finalize(stmt);
+        return rc;
+    }
+    rc = sqlite3_bind_text(stmt, 2, p->genero, -1, SQLITE_STATIC);
+    if (rc != SQLITE_OK) {
+        fprintf(stderr, "Error vinculando genero: %s\n", sqlite3_errmsg(db));
+        sqlite3_finalize(stmt);
+        return rc;
+    }
+
+    rc = sqlite3_bind_int(stmt, 3, p->duracion);
+    if (rc != SQLITE_OK) {
+        fprintf(stderr, "Error vinculando duracion: %s\n", sqlite3_errmsg(db));
+        sqlite3_finalize(stmt);
+        return rc;
+    }
+
+    rc = sqlite3_bind_text(stmt, 4, p->Reparto, -1, SQLITE_STATIC);
+    if (rc != SQLITE_OK) {
+        fprintf(stderr, "Error vinculando Reparto: %s\n", sqlite3_errmsg(db));
+        sqlite3_finalize(stmt);
+        return rc;
+    }
+    rc = sqlite3_step(stmt);
+    if (rc != SQLITE_DONE) {
+        fprintf(stderr, "Error insertando película: %s\n", sqlite3_errmsg(db));
+        sqlite3_finalize(stmt);
+        return rc;
+    }
+    sqlite3_finalize(stmt);
+
+    printf("Película insertada con éxito\n");
+    return SQLITE_OK;
+}
+
+

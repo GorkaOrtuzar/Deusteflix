@@ -19,11 +19,10 @@ void aniadirPelicula(Videoclub *v, Pelicula p) {
             exit(EXIT_FAILURE);
         }
     } else {
-        // Usar realloc para aumentar el tamaño del array
         Pelicula *temp = (Pelicula*) realloc(v->aPeliculas, (v->numPeliculas + 1) * sizeof(Pelicula));
         if (temp == NULL) {
             perror("Error al redimensionar memoria");
-            free(v->aPeliculas); // Liberar la memoria anterior
+            free(v->aPeliculas);
             exit(EXIT_FAILURE);
         }
         v->aPeliculas = temp;
@@ -66,7 +65,7 @@ Pelicula pedirPelicula() {
     fflush(stdout);
     fflush(stdin);
     scanf("%d", &p.duracion);
-    getchar(); // Limpiar el buffer de entrada después de scanf
+    getchar();
 
     printf("Introduce el género: ");
     fflush(stdout);
@@ -86,7 +85,7 @@ void ordenarVideoclubPorTitulo(Videoclub *v) {
     int i, j;
 
     if (v->numPeliculas <= 1) {
-        return; // No hay nada que ordenar
+        return;
     }
 
     for (i = 0; i < v->numPeliculas - 1; i++) {
@@ -101,8 +100,7 @@ void ordenarVideoclubPorTitulo(Videoclub *v) {
 }
 
 char* pedirTitulo() {
-    static char titulo[50]; // Usamos un buffer estático para evitar problemas de memoria
-
+    static char titulo[50];
     printf("Introduce el título: ");
     fflush(stdout);
     fflush(stdin);
@@ -138,7 +136,7 @@ void eliminarPelicula(Videoclub *v, char *titulo) {
     if (v->numPeliculas > 0) {
         Pelicula *temp = realloc(v->aPeliculas, v->numPeliculas * sizeof(Pelicula));
         if (temp != NULL) {
-            v->aPeliculas = temp; // Actualiza solo si realloc fue exitoso
+            v->aPeliculas = temp;
         }
     } else {
         free(v->aPeliculas);

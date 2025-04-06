@@ -8,9 +8,8 @@ typedef struct{
     char Reparto[20];
 } Pelicula;
 
-/*Nuestro videoclub tiene un número ilimitado de películas*/
 typedef struct{
-    Pelicula *aPeliculas; //Como no sabemos cuántas películas hay, tenemos que declarar un array dinámico
+    Pelicula *aPeliculas;
     int numPeliculas;
 } Videoclub;
 

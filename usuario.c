@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include "sqlite3.h"
 
 void inicializarListaUsuarios(ListaUsuarios *lu) {
     lu->numUsuarios = 0;
@@ -202,3 +203,50 @@ void liberarMemoriaUsuarios(ListaUsuarios *lu) {
     }
     lu->numUsuarios = 0;
 }
+
+
+// Callback para imprimir las películas vistas por un usuario
+void imprimirPeliculaVista(void *userData, const char *titulo, const char *genero) {
+    printf("%20s%30s\n", titulo, genero);
+}
+
+// Función para mostrar las películas vistas por un usuario
+void mostrarPeliculasVistasUsuario(sqlite3 *db, Usuario usuario) {
+    int usuarioID = obtenerUsuarioID(db, usuario.Email);
+    if (usuarioID < 0) {
+        printf("\033[1;31mError: No se pudo encontrar el ID del usuario en la base de datos.\033[0m\n");
+        return;
+    }
+
+    printf("\033[1;35m%20s%30s\n", "TÍTULO", "GÉNERO\033[0m");
+
+    int result = obtenerPeliculasVistas(db, usuarioID, imprimirPeliculaVista, NULL);
+
+    if (result != SQLITE_OK) {
+        printf("\033[1;31mError al obtener las películas vistas.\033[0m\n");
+    } else if (sqlite3_changes(db) == 0) {
+        printf("\nNo has visto ninguna película aún.\n");
+    }
+}
+
+// Función para registrar que un usuario ha visto una película
+void registrarVisualizacionPelicula(sqlite3 *db, Usuario usuario, const char *tituloPelicula) {
+    int usuarioID = obtenerUsuarioID(db, usuario.Email);
+    int peliculaID = obtenerPeliculaID(db, tituloPelicula);
+
+    if (usuarioID < 0 || peliculaID < 0) {
+        printf("\033[1;31mError: No se pudo encontrar el usuario o la película en la base de datos.\033[0m\n");
+        return;
+    }
+
+    int result = registrarPeliculaVista(db, usuarioID, peliculaID);
+
+    if (result == SQLITE_OK) {
+        printf("\033[1;32mSe ha registrado la visualización de la película correctamente.\033[0m\n");
+    } else {
+        printf("\033[1;31mError al registrar la visualización de la película.\033[0m\n");
+    }
+}
+
+
+
