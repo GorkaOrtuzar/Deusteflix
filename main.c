@@ -24,6 +24,13 @@ int main() {
     sqlite3 *db;
     int result, resultBD;
 
+
+
+
+
+
+
+
     // Inicializar la BD
     result = inicializarBBDD(&db);
     if (result == SQLITE_OK) {

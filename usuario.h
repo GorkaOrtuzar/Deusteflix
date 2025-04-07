@@ -31,4 +31,5 @@ void imprimirPeliculaVista(void *userData, const char *titulo, const char *gener
 void mostrarPeliculasVistasUsuario(sqlite3 *db, Usuario usuario);
 void registrarVisualizacionPelicula(sqlite3 *db, Usuario usuario, const char *tituloPelicula);
 
+
 #endif /* USUARIO_H_ */

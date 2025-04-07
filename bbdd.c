@@ -132,8 +132,6 @@ int cargarDatosCSVaBD(sqlite3 **db, const char *archivoPeliculas, const char *ar
                 result = sqlite3_step(stmt_pelicula);
                 if (result == SQLITE_DONE) {
                     peliculasCargadas++;
-                } else {
-                    fprintf(stderr, "\033[1;31mError insertando película: %s\033[0m\n", titulo);
                 }
             }
         }
@@ -169,8 +167,6 @@ int cargarDatosCSVaBD(sqlite3 **db, const char *archivoPeliculas, const char *ar
                 result = sqlite3_step(stmt_usuario);
                 if (result == SQLITE_DONE) {
                     usuariosCargados++;
-                } else {
-                    fprintf(stderr, "\033[1;31mError insertando usuario: %s\033[0m\n", email);
                 }
             }
         }
@@ -416,7 +412,6 @@ int insertarPeliculaEnBD(Pelicula *p, sqlite3 *db) {
     }
     rc = sqlite3_step(stmt);
     if (rc != SQLITE_DONE) {
-        fprintf(stderr, "Error insertando película: %s\n", sqlite3_errmsg(db));
         sqlite3_finalize(stmt);
         return rc;
     }

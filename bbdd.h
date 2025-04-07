@@ -1,9 +1,12 @@
 #ifndef BBDD_H
 #define BBDD_H
 
+
 #include "sqlite3.h"
 #include "usuario.h"
 #include "pelicula.h"
+
+
 
 // Función para inicializar la base de datos
 int inicializarBBDD(sqlite3 **db);
