@@ -158,6 +158,9 @@ int main(int argc, char *argv[]) {
     int fin = 0;
     do {
         /*EMPIEZA EL PROGRAMA DEL SERVIDOR*/
+    	memset(recvBuff, 0, sizeof(recvBuff));
+    	memset(sendBuff, 0, sizeof(sendBuff));
+
 
         // Recibir opción del cliente
         int bytesReceived = recv(comm_socket, recvBuff, sizeof(recvBuff), 0);
@@ -166,12 +169,15 @@ int main(int argc, char *argv[]) {
             fin = 1;
             continue;
         }
-
-        recvBuff[bytesReceived] = '\0';
-        printf("Comando recibido: %s\n", recvBuff);
+        recvBuff[bytesReceived] = '\0';  // ← Esta línea ya está, pero asegúrate que esté
+        // Limpiar cualquier carácter adicional del buffer
+        for (int i = bytesReceived; i < sizeof(recvBuff); i++) {
+            recvBuff[i] = '\0';
+        }
+        memset(sendBuff, 0, sizeof(sendBuff));
+        sprintf(sendBuff, "Comando recibido: %c", recvBuff[0]);
 
         // Confirmar recepción
-        sprintf(sendBuff, "Comando recibido: %s", recvBuff);
         send(comm_socket, sendBuff, strlen(sendBuff), 0);
 
         // Procesar el comando según la opción
@@ -197,55 +203,96 @@ int main(int argc, char *argv[]) {
                 send(comm_socket, sendBuff, strlen(sendBuff), 0);
 
                 // Si es un administrador válido, procesar sus solicitudes
+                // Si es un administrador válido, procesar sus solicitudes
                 if (adminEncontrado) {
-                        // Recibir opción del administrador
-                        recv(comm_socket, recvBuff, sizeof(recvBuff), 0);
+                    printf("Administrador %s autenticado correctamente\n", email);
 
-                        // Confirmar recepción
-                        sprintf(sendBuff, "Comando de admin recibido: %s", recvBuff);
-                        send(comm_socket, sendBuff, strlen(sendBuff), 0);
+                    // BUCLE para procesar múltiples comandos del administrador
+                    while (1) {
+                        printf("DEBUG SERVIDOR: Esperando comando de administrador...\n");
+
+                        // Recibir opción del administrador
+                        memset(recvBuff, 0, sizeof(recvBuff));
+                        if (recv(comm_socket, recvBuff, sizeof(recvBuff), 0) <= 0) {
+                            printf("Administrador desconectado\n");
+                            break;
+                        }
 
                         char opcionAdmin = recvBuff[0];
+                        printf("DEBUG SERVIDOR: Comando de admin recibido: '%c'\n", opcionAdmin);
+
+
 
                         if (opcionAdmin == '0') {
-
+                            printf("Administrador cerrando sesión\n");
+                            break;
                         }
+                        // Confirmar recepción
+                          sprintf(sendBuff, "Comando de admin recibido: %c", opcionAdmin);
+                          send(comm_socket, sendBuff, strlen(sendBuff), 0);
 
                         // Procesar comandos del administrador
                         switch (opcionAdmin) {
                             case '1': { // Ver listado de películas
-                            	// Recibir código de operación (ya recibido antes del switch)
+                                printf("Cliente solicita listado de películas...\n");
 
-                            	// Enviar número de películas
-                            	memset(sendBuff, 0, sizeof(sendBuff));
-                            	sprintf(sendBuff, "%d", g_context.videoclub.numPeliculas);
-                            	send(comm_socket, sendBuff, strlen(sendBuff) + 1, 0);
+                                // 1. Enviar número de películas al cliente
+                                memset(sendBuff, 0, sizeof(sendBuff));
+                                sprintf(sendBuff, "%d", g_context.videoclub.numPeliculas);
 
-                            	// Enviar cada película
-                            	for (int i = 0; i < g_context.videoclub.numPeliculas; i++) {
-                            	    memset(sendBuff, 0, sizeof(sendBuff));
-                            	    sprintf(sendBuff, "%s;%s;%d;%s",
-                            	        g_context.videoclub.aPeliculas[i].titulo,
-                            	        g_context.videoclub.aPeliculas[i].genero,
-                            	        g_context.videoclub.aPeliculas[i].duracion,
-                            	        g_context.videoclub.aPeliculas[i].Reparto);
-                            	    send(comm_socket, sendBuff, strlen(sendBuff) + 1, 0);
+                                if (send(comm_socket, sendBuff, strlen(sendBuff), 0) == SOCKET_ERROR) {
+                                    printf("Error enviando número de películas\n");
+                                    break;
+                                }
 
-                            	    // Pequeña pausa para asegurar recepción
-                            	    Sleep(10);
-                            	}
+                                printf("DEBUG: Enviando %d películas...\n", g_context.videoclub.numPeliculas);
 
-                            	printf("Enviadas %d películas al cliente\n", g_context.videoclub.numPeliculas);
-                            	break;
+                                // 2. Enviar cada película una por una
+                                for (int i = 0; i < g_context.videoclub.numPeliculas; i++) {
+                                    // Preparar datos de la película
+                                    memset(sendBuff, 0, sizeof(sendBuff));
+                                    sprintf(sendBuff, "%s;%s;%d;%s",
+                                        g_context.videoclub.aPeliculas[i].titulo,
+                                        g_context.videoclub.aPeliculas[i].genero,
+                                        g_context.videoclub.aPeliculas[i].duracion,
+                                        g_context.videoclub.aPeliculas[i].Reparto);
+
+                                    printf("DEBUG: Enviando película %d: %s\n", i+1, g_context.videoclub.aPeliculas[i].titulo);
+
+                                    // Enviar la película
+                                    if (send(comm_socket, sendBuff, strlen(sendBuff), 0) == SOCKET_ERROR) {
+                                        printf("Error enviando película %d\n", i+1);
+                                        break;
+                                    }
+
+                                    // 3. Esperar confirmación del cliente
+                                    memset(recvBuff, 0, sizeof(recvBuff));
+                                    if (recv(comm_socket, recvBuff, sizeof(recvBuff), 0) <= 0) {
+                                        printf("Error recibiendo confirmación para película %d\n", i+1);
+                                        break;
+                                    }
+
+                                    printf("DEBUG: Confirmación recibida para película %d: '%s'\n", i+1, recvBuff);
+
+                                    // Verificar que el cliente confirmó la recepción
+                                    if (strcmp(recvBuff, "OK") != 0) {
+                                        printf("ADVERTENCIA: Cliente no envió 'OK' para película %d (envió: '%s')\n", i+1, recvBuff);
+                                    }
+                                }
+
+                                printf("Listado de películas enviado completamente\n");
+                                break;
                             }
 
                             case '2': { // Ver listado de usuarios
-                                // Enviar número de usuarios
+                                printf("Cliente solicita listado de usuarios...\n");
 
+                                // Enviar número de usuarios
                                 sprintf(sendBuff, "%d", g_context.listaUsuarios.numUsuarios);
                                 send(comm_socket, sendBuff, strlen(sendBuff), 0);
+                                printf("DEBUG: Enviando %d usuarios...\n", g_context.listaUsuarios.numUsuarios);
 
-                                // Enviar cada usuario
+                                // Enviar cada usuario uno por uno
                                 for (int i = 0; i < g_context.listaUsuarios.numUsuarios; i++) {
                                     memset(sendBuff, 0, sizeof(sendBuff));
                                     sprintf(sendBuff, "%s;%s;%s;%s;%s;%s",
@@ -255,24 +302,39 @@ int main(int argc, char *argv[]) {
                                             g_context.listaUsuarios.aUsuarios[i].NickName,
                                             g_context.listaUsuarios.aUsuarios[i].Pais,
                                             g_context.listaUsuarios.aUsuarios[i].Contrasenia);
+
                                     send(comm_socket, sendBuff, strlen(sendBuff), 0);
-                                    // Pequeña pausa para asegurar que el cliente reciba todo correctamente
-                                    Sleep(10);
+
+                                    // Esperar confirmación del cliente
+                                    memset(recvBuff, 0, sizeof(recvBuff));
+                                    recv(comm_socket, recvBuff, sizeof(recvBuff), 0);
+
+                                    printf("Usuario %d/%d enviado: %s %s\n", i+1, g_context.listaUsuarios.numUsuarios,
+                                           g_context.listaUsuarios.aUsuarios[i].Nombre,
+                                           g_context.listaUsuarios.aUsuarios[i].Apellido);
                                 }
+                                printf("Listado de usuarios enviado completamente\n");
                                 break;
                             }
+
                             case '3': { // Eliminar película
-                                // Recibir código de operación
+                                printf("Cliente solicita eliminar película...\n");
+
+                                // Recibir código de operación "8"
+                                memset(recvBuff, 0, sizeof(recvBuff));
                                 recv(comm_socket, recvBuff, sizeof(recvBuff), 0);
+                                printf("DEBUG: Código recibido: '%s'\n", recvBuff);
 
                                 // Enviar confirmación
                                 sprintf(sendBuff, "OK");
                                 send(comm_socket, sendBuff, strlen(sendBuff), 0);
 
                                 // Recibir título a eliminar
+                                memset(recvBuff, 0, sizeof(recvBuff));
                                 recv(comm_socket, recvBuff, sizeof(recvBuff), 0);
                                 char titulo[50];
                                 strcpy(titulo, recvBuff);
+                                printf("DEBUG: Título a eliminar: '%s'\n", titulo);
 
                                 // Buscar y eliminar la película
                                 int encontrado = -1;
@@ -287,131 +349,147 @@ int main(int argc, char *argv[]) {
                                     eliminarPelicula(&g_context.videoclub, titulo);
                                     guardarPeliculasEnArchivo(&g_context.videoclub, ARCHIVO_PELICULAS);
                                     strcpy(sendBuff, "1"); // Éxito
+                                    printf("Película '%s' eliminada correctamente\n", titulo);
                                 } else {
-                                    strcpy(sendBuff, "0"); // Error - película no encontrada
+                                    strcpy(sendBuff, "0"); // Error
+                                    printf("Error: Película '%s' no encontrada\n", titulo);
                                 }
                                 send(comm_socket, sendBuff, strlen(sendBuff), 0);
                                 break;
                             }
+
                             case '4': { // Añadir película
-                            	// Recibir código de operación (ya recibido antes del switch)
-                            	// Enviar confirmación
-                            	sprintf(sendBuff, "OK");
-                            	send(comm_socket, sendBuff, strlen(sendBuff) + 1, 0);
+                                printf("Cliente solicita añadir película...\n");
 
-                            	// Recibir datos de la película del cliente
-                            	memset(recvBuff, 0, sizeof(recvBuff));
-                            	recv(comm_socket, recvBuff, sizeof(recvBuff), 0);
+                                // Recibir código de operación "7"
+                                memset(recvBuff, 0, sizeof(recvBuff));
+                                recv(comm_socket, recvBuff, sizeof(recvBuff), 0);
+                                printf("DEBUG: Código recibido: '%s'\n", recvBuff);
 
-                            	// Parsear los datos recibidos
-                            	Pelicula p;
-                            	char *token = strtok(recvBuff, ";");
-                            	if (token) {
-                            	    strncpy(p.titulo, token, sizeof(p.titulo) - 1);
-                            	    p.titulo[sizeof(p.titulo) - 1] = '\0';
-                            	}
+                                // Enviar confirmación
+                                sprintf(sendBuff, "OK");
+                                send(comm_socket, sendBuff, strlen(sendBuff) + 1, 0);
 
-                            	token = strtok(NULL, ";");
-                            	if (token) {
-                            	    strncpy(p.genero, token, sizeof(p.genero) - 1);
-                            	    p.genero[sizeof(p.genero) - 1] = '\0';
-                            	}
+                                // Recibir datos de la película del cliente
+                                memset(recvBuff, 0, sizeof(recvBuff));
+                                recv(comm_socket, recvBuff, sizeof(recvBuff), 0);
+                                printf("DEBUG: Datos de película recibidos: '%s'\n", recvBuff);
 
-                            	token = strtok(NULL, ";");
-                            	if (token) {
-                            	    p.duracion = atoi(token);
-                            	}
+                                // Parsear los datos recibidos
+                                Pelicula p;
+                                char *token = strtok(recvBuff, ";");
+                                if (token) {
+                                    strncpy(p.titulo, token, sizeof(p.titulo) - 1);
+                                    p.titulo[sizeof(p.titulo) - 1] = '\0';
+                                }
 
-                            	token = strtok(NULL, ";");
-                            	if (token) {
-                            	    strncpy(p.Reparto, token, sizeof(p.Reparto) - 1);
-                            	    p.Reparto[sizeof(p.Reparto) - 1] = '\0';
-                            	}
+                                token = strtok(NULL, ";");
+                                if (token) {
+                                    strncpy(p.genero, token, sizeof(p.genero) - 1);
+                                    p.genero[sizeof(p.genero) - 1] = '\0';
+                                }
 
-                            	// Añadir la película
-                            	aniadirPelicula(&g_context.videoclub, p); // Nombre correcto de la función
+                                token = strtok(NULL, ";");
+                                if (token) {
+                                    p.duracion = atoi(token);
+                                }
 
-                            	// Guardar en archivo y enviar confirmación de éxito
-                            	guardarPeliculasEnArchivo(&g_context.videoclub, ARCHIVO_PELICULAS);
+                                token = strtok(NULL, ";");
+                                if (token) {
+                                    strncpy(p.Reparto, token, sizeof(p.Reparto) - 1);
+                                    p.Reparto[sizeof(p.Reparto) - 1] = '\0';
+                                }
 
-                            	// Limpiar buffer y enviar respuesta de éxito
-                            	memset(sendBuff, 0, sizeof(sendBuff));
-                            	strcpy(sendBuff, "1"); // Siempre éxito ya que la función es void
+                                // Añadir la película
+                                aniadirPelicula(&g_context.videoclub, p);
+                                guardarPeliculasEnArchivo(&g_context.videoclub, ARCHIVO_PELICULAS);
 
-                            	// Enviar confirmación al cliente
-                            	send(comm_socket, sendBuff, strlen(sendBuff) + 1, 0);
+                                // Enviar confirmación de éxito
+                                memset(sendBuff, 0, sizeof(sendBuff));
+                                strcpy(sendBuff, "1");
+                                send(comm_socket, sendBuff, strlen(sendBuff) + 1, 0);
 
-                            	printf("Película '%s' añadida correctamente\n", p.titulo);
-                            	break;
+                                printf("Película '%s' añadida correctamente\n", p.titulo);
+                                break;
                             }
 
                             case '5': { // Añadir usuario
-                                // Recibir datos del usuario a registrar
-                            	// Recibir código de operación (ya recibido antes del switch)
-                            	// Enviar confirmación
-                            	sprintf(sendBuff, "OK");
-                            	send(comm_socket, sendBuff, strlen(sendBuff) + 1, 0);
+                                printf("Cliente solicita añadir usuario...\n");
 
-                            	// Recibir datos del usuario del cliente
-                            	memset(recvBuff, 0, sizeof(recvBuff));
-                            	recv(comm_socket, recvBuff, sizeof(recvBuff), 0);
+                                // Recibir código de operación "4"
+                                memset(recvBuff, 0, sizeof(recvBuff));
+                                recv(comm_socket, recvBuff, sizeof(recvBuff), 0);
+                                printf("DEBUG: Código recibido: '%s'\n", recvBuff);
 
-                            	// Parsear los datos recibidos
-                            	Usuario u;
-                            	char *token = strtok(recvBuff, ";");
-                            	if (token) {
-                            	    strncpy(u.Nombre, token, sizeof(u.Nombre) - 1);
-                            	    u.Nombre[sizeof(u.Nombre) - 1] = '\0';
-                            	}
+                                // Enviar confirmación
+                                sprintf(sendBuff, "OK");
+                                send(comm_socket, sendBuff, strlen(sendBuff) + 1, 0);
 
-                            	token = strtok(NULL, ";");
-                            	if (token) {
-                            	    strncpy(u.Apellido, token, sizeof(u.Apellido) - 1);
-                            	    u.Apellido[sizeof(u.Apellido) - 1] = '\0';
-                            	}
+                                // Recibir datos del usuario del cliente
+                                memset(recvBuff, 0, sizeof(recvBuff));
+                                recv(comm_socket, recvBuff, sizeof(recvBuff), 0);
+                                printf("DEBUG: Datos de usuario recibidos: '%s'\n", recvBuff);
 
-                            	token = strtok(NULL, ";");
-                            	if (token) {
-                            	    strncpy(u.Email, token, sizeof(u.Email) - 1);
-                            	    u.Email[sizeof(u.Email) - 1] = '\0';
-                            	}
+                                // Parsear los datos recibidos
+                                Usuario u;
+                                char *token = strtok(recvBuff, ";");
+                                if (token) {
+                                    strncpy(u.Nombre, token, sizeof(u.Nombre) - 1);
+                                    u.Nombre[sizeof(u.Nombre) - 1] = '\0';
+                                }
 
-                            	token = strtok(NULL, ";");
-                            	if (token) {
-                            	    strncpy(u.NickName, token, sizeof(u.NickName) - 1);
-                            	    u.NickName[sizeof(u.NickName) - 1] = '\0';
-                            	}
+                                token = strtok(NULL, ";");
+                                if (token) {
+                                    strncpy(u.Apellido, token, sizeof(u.Apellido) - 1);
+                                    u.Apellido[sizeof(u.Apellido) - 1] = '\0';
+                                }
 
-                            	token = strtok(NULL, ";");
-                            	if (token) {
-                            	    strncpy(u.Pais, token, sizeof(u.Pais) - 1);
-                            	    u.Pais[sizeof(u.Pais) - 1] = '\0';
-                            	}
+                                token = strtok(NULL, ";");
+                                if (token) {
+                                    strncpy(u.Email, token, sizeof(u.Email) - 1);
+                                    u.Email[sizeof(u.Email) - 1] = '\0';
+                                }
 
-                            	token = strtok(NULL, ";");
-                            	if (token) {
-                            	    strncpy(u.Contrasenia, token, sizeof(u.Contrasenia) - 1);
-                            	    u.Contrasenia[sizeof(u.Contrasenia) - 1] = '\0';
-                            	}
+                                token = strtok(NULL, ";");
+                                if (token) {
+                                    strncpy(u.NickName, token, sizeof(u.NickName) - 1);
+                                    u.NickName[sizeof(u.NickName) - 1] = '\0';
+                                }
 
-                            	// Añadir el usuario (asumiendo que existe la función)
-                            	aniadirUsuario(&g_context.listaUsuarios, u); // O la función que corresponda
+                                token = strtok(NULL, ";");
+                                if (token) {
+                                    strncpy(u.Pais, token, sizeof(u.Pais) - 1);
+                                    u.Pais[sizeof(u.Pais) - 1] = '\0';
+                                }
 
-                            	// Guardar en archivo
-                            	guardarUsuariosEnArchivo(&g_context.listaUsuarios, ARCHIVO_USUARIOS); // O el archivo que uses
+                                token = strtok(NULL, ";");
+                                if (token) {
+                                    strncpy(u.Contrasenia, token, sizeof(u.Contrasenia) - 1);
+                                    u.Contrasenia[sizeof(u.Contrasenia) - 1] = '\0';
+                                }
 
-                            	// Limpiar buffer y enviar respuesta de éxito
-                            	memset(sendBuff, 0, sizeof(sendBuff));
-                            	strcpy(sendBuff, "1"); // Éxito
+                                // Añadir el usuario
+                                aniadirUsuario(&g_context.listaUsuarios, u);
+                                guardarUsuariosEnArchivo(&g_context.listaUsuarios, ARCHIVO_USUARIOS);
 
-                            	// Enviar confirmación al cliente
-                            	send(comm_socket, sendBuff, strlen(sendBuff) + 1, 0);
+                                // Enviar confirmación de éxito
+                                memset(sendBuff, 0, sizeof(sendBuff));
+                                strcpy(sendBuff, "1");
+                                send(comm_socket, sendBuff, strlen(sendBuff) + 1, 0);
 
-                            	printf("Usuario '%s %s' registrado correctamente\n", u.Nombre, u.Apellido);
-                            	break;
+                                printf("Usuario '%s %s' registrado correctamente\n", u.Nombre, u.Apellido);
+                                break;
                             }
-                        }
 
+                            default:
+                                printf("Comando de administrador no reconocido: %c\n", opcionAdmin);
+                                sprintf(sendBuff, "ERROR");
+                                send(comm_socket, sendBuff, strlen(sendBuff), 0);
+                                break;
+                        }
+                    } // Fin del bucle while del administrador
+                    memset(sendBuff, 0, sizeof(sendBuff));
+                    memset(recvBuff, 0, sizeof(recvBuff));
                 }
                 break;
             }

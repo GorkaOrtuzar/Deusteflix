@@ -10,9 +10,10 @@ char menuPrincipal(){
     printf("0. Salir\n");
     printf("Elige una opción: ");
     fflush(stdout);
-    fflush(stdin);
-    scanf("%c", &opcion);
-    getchar(); // Limpiar buffer
+
+    // Leer la opción con un espacio antes de %c para ignorar espacios en blanco
+    scanf(" %c", &opcion);
+
     return opcion;
 }
 
@@ -28,9 +29,10 @@ char menuAdministrador(){
     printf("0. Salir\n");
     printf("Elige una opción: ");
     fflush(stdout);
-    fflush(stdin);
-    scanf("%c", &opcion);
-    getchar(); // Limpiar buffer
+
+    // Leer la opción con un espacio antes de %c para ignorar espacios en blanco
+    scanf(" %c", &opcion);
+
     return opcion;
 }
 
@@ -44,9 +46,10 @@ char menuUsuario(){
     printf("0. Salir\n");
     printf("Elige una opción: ");
     fflush(stdout);
-    fflush(stdin);
-    scanf("%c", &opcion);
-    getchar(); // Limpiar buffer
+
+    // Leer la opción con un espacio antes de %c para ignorar espacios en blanco
+    scanf(" %c", &opcion);
+
     return opcion;
 }
 
@@ -59,8 +62,9 @@ char menuSesiones(){
     printf("0. Volver\n");
     printf("Elige una opción: ");
     fflush(stdout);
-    fflush(stdin);
-    scanf("%c", &opcion);
-    getchar(); // Limpiar buffer
+
+    // Leer la opción con un espacio antes de %c para ignorar espacios en blanco
+    scanf(" %c", &opcion);
+
     return opcion;
 }
