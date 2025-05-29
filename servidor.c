@@ -625,6 +625,58 @@ int main(int argc, char *argv[]) {
                                                 Sleep(10);
                                             }
                                             printf("DEBUG SERVIDOR: Enviadas %d películas\n", g_context.videoclub.numPeliculas);
+
+                                            //registrar pelicula vista
+                                            printf("DEBUG SERVIDOR: Esperando posible registro de película...\n");
+
+                                            memset(recvBuff, 0, sizeof(recvBuff));
+                                                int bytes = recv(comm_socket, recvBuff, sizeof(recvBuff), 0);
+
+                                                if (bytes > 0 && recvBuff[0] == '6') {
+                                                    printf("DEBUG SERVIDOR: Cliente solicita registrar película\n");
+
+                                                    // Enviar confirmación
+                                                    sprintf(sendBuff, "OK");
+                                                    send(comm_socket, sendBuff, strlen(sendBuff), 0);
+
+                                                    // Recibir email del usuario
+                                                    memset(recvBuff, 0, sizeof(recvBuff));
+                                                    recv(comm_socket, recvBuff, sizeof(recvBuff), 0);
+                                                    char emailUsuario[50];
+                                                    strcpy(emailUsuario, recvBuff);
+
+                                                    // Recibir título de la película
+                                                    memset(recvBuff, 0, sizeof(recvBuff));
+                                                    recv(comm_socket, recvBuff, sizeof(recvBuff), 0);
+                                                    char tituloPelicula[50];
+                                                    strcpy(tituloPelicula, recvBuff);
+
+                                                    printf("DEBUG SERVIDOR: Registrando '%s' para '%s'\n", tituloPelicula, emailUsuario);
+
+                                                    // Buscar el usuario en la lista
+                                                      Usuario* usuarioEncontrado = NULL;
+                                                        for (int i = 0; i < g_context.listaUsuarios.numUsuarios; i++) {
+                                                           if (strcmp(g_context.listaUsuarios.aUsuarios[i].Email, emailUsuario) == 0) {
+                                                              usuarioEncontrado = &g_context.listaUsuarios.aUsuarios[i];
+                                                               break;
+                                                                }
+                                                            }
+                                                        if (usuarioEncontrado != NULL) {
+                                                                    // Usar tu función para registrar la visualización
+                                                                    registrarVisualizacionPelicula(g_context.db, *usuarioEncontrado, tituloPelicula);
+
+                                                                    // Enviar confirmación de éxito
+                                                                    sprintf(sendBuff, "1");
+                                                                    send(comm_socket, sendBuff, strlen(sendBuff), 0);
+                                                                    printf("DEBUG SERVIDOR: Película registrada correctamente usando función\n");
+                                                                } else {
+                                                                    // Usuario no encontrado
+                                                                    sprintf(sendBuff, "0");
+                                                                    send(comm_socket, sendBuff, strlen(sendBuff), 0);
+                                                                    printf("DEBUG SERVIDOR: Error - Usuario no encontrado\n");
+                                                                }
+                                                }
+
                                             break;
                                         }
 
