@@ -26,4 +26,5 @@ char *pedirTitulo();
 void guardarPeliculasEnArchivo(Videoclub *v, const char* nombreArchivo);
 void cargarPeliculasDesdeArchivo(Videoclub *v, const char* nombreArchivo);
 
+
 #endif /* PELICULA_H_ */

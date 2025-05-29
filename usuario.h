@@ -2,7 +2,7 @@
 #define USUARIO_H_
 
 #include "sqlite3.h" // Añadir este include para usar sqlite3
-
+#include <winsock2.h>
 typedef struct usuario{
     char Nombre[20];
     char Apellido[20];
@@ -30,6 +30,7 @@ void liberarMemoriaUsuarios(ListaUsuarios *lu);
 void imprimirPeliculaVista(void *userData, const char *titulo, const char *genero);
 void mostrarPeliculasVistasUsuario(sqlite3 *db, Usuario usuario);
 void registrarVisualizacionPelicula(sqlite3 *db, Usuario usuario, const char *tituloPelicula);
+void enviarPeliculasVistasUsuario(sqlite3 *db, Usuario usuario, SOCKET comm_socket, char* sendBuff);
 
 
 #endif /* USUARIO_H_ */

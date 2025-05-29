@@ -682,7 +682,43 @@ int main(int argc, char *argv[]) {
 
                                         case '3': { // Ver mis películas vistas
                                             printf("DEBUG SERVIDOR: Ver películas vistas\n");
-                                            // Lógica para películas vistas...
+
+                                            // Enviar confirmación
+                                            memset(sendBuff, 0, sizeof(sendBuff));
+                                            sprintf(sendBuff, "OK");
+                                            send(comm_socket, sendBuff, strlen(sendBuff), 0);
+
+                                            // Recibir email del usuario
+                                            memset(recvBuff, 0, sizeof(recvBuff));
+                                            recv(comm_socket, recvBuff, sizeof(recvBuff), 0);
+                                            char emailUsuario[50];
+                                            strcpy(emailUsuario, recvBuff);
+
+                                            printf("DEBUG SERVIDOR: Consultando películas vistas para '%s'\n", emailUsuario);
+
+                                            // Buscar el usuario
+                                            Usuario* usuarioEncontrado = NULL;
+                                            for (int i = 0; i < g_context.listaUsuarios.numUsuarios; i++) {
+                                                if (strcmp(g_context.listaUsuarios.aUsuarios[i].Email, emailUsuario) == 0) {
+                                                    usuarioEncontrado = &g_context.listaUsuarios.aUsuarios[i];
+                                                    break;
+                                                }
+                                            }
+
+                                            if (usuarioEncontrado != NULL) {
+                                                // Enviar películas vistas al cliente
+                                                enviarPeliculasVistasUsuario(g_context.db, *usuarioEncontrado, comm_socket, sendBuff);
+
+                                                // También mostrar en consola del servidor
+                                                printf("DEBUG SERVIDOR: Películas vistas del usuario:\n");
+                                                mostrarPeliculasVistasUsuario(g_context.db, *usuarioEncontrado);
+
+                                            } else {
+                                                printf("DEBUG SERVIDOR: Usuario no encontrado\n");
+                                                sprintf(sendBuff, "0");
+                                                send(comm_socket, sendBuff, strlen(sendBuff), 0);
+                                            }
+
                                             break;
                                         }
 

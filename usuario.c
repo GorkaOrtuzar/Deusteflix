@@ -237,6 +237,8 @@ void registrarVisualizacionPelicula(sqlite3 *db, Usuario usuario, const char *ti
 
     if (usuarioID < 0 || peliculaID < 0) {
         printf("\033[1;31mError: No se pudo encontrar el usuario o la película en la base de datos.\033[0m\n");
+        fflush(stdout);
+
         return;
     }
 
@@ -244,10 +246,77 @@ void registrarVisualizacionPelicula(sqlite3 *db, Usuario usuario, const char *ti
 
     if (result == SQLITE_OK) {
         printf("\033[1;32mSe ha registrado la visualización de la película correctamente.\033[0m\n");
+        fflush(stdout);
+
     } else {
         printf("\033[1;31mError al registrar la visualización de la película.\033[0m\n");
+        fflush(stdout);
+
     }
 }
 
+void enviarPeliculasVistasUsuario(sqlite3 *db, Usuario usuario, SOCKET comm_socket, char* sendBuff) {
+    int usuarioID = obtenerUsuarioID(db, usuario.Email);
+    printf("DEBUG: usuarioID obtenido: %d\n", usuarioID);
+    fflush(stdout);
+
+    if (usuarioID < 0) {
+        printf("DEBUG SERVIDOR: Error obteniendo ID del usuario\n");
+        sprintf(sendBuff, "0");
+        fflush(stdout);
+        send(comm_socket, sendBuff, strlen(sendBuff), 0);
+        return;
+    }
+
+    // Contar películas vistas - CORREGIR nombre de columna
+    char queryCount[256];
+    sprintf(queryCount, "SELECT COUNT(*) FROM PeliculasVistas WHERE UsuarioID = %d", usuarioID);
+    printf("DEBUG: Query count: %s\n", queryCount);
+
+    sqlite3_stmt *stmt;
+    int count = 0;
+
+    if (sqlite3_prepare_v2(db, queryCount, -1, &stmt, NULL) == SQLITE_OK) {
+        if (sqlite3_step(stmt) == SQLITE_ROW) {
+            count = sqlite3_column_int(stmt, 0);
+        }
+        sqlite3_finalize(stmt);
+    }
+
+    printf("DEBUG SERVIDOR: Enviando %d películas al cliente\n", count);
+
+    // Enviar número de películas
+    sprintf(sendBuff, "%d", count);
+    send(comm_socket, sendBuff, strlen(sendBuff), 0);
+
+    // Si hay películas, enviarlas
+    if (count > 0) {
+        char queryData[512];
+        sprintf(queryData, "SELECT p.titulo, p.genero FROM PeliculasVistas pv "
+                          "JOIN Peliculas p ON pv.PeliculaID = p.ID "
+                          "WHERE pv.UsuarioID = %d", usuarioID);
+
+        printf("DEBUG: Query data: %s\n", queryData);
+
+        if (sqlite3_prepare_v2(db, queryData, -1, &stmt, NULL) == SQLITE_OK) {
+            while (sqlite3_step(stmt) == SQLITE_ROW) {
+                char* titulo = (char*)sqlite3_column_text(stmt, 0);
+                char* genero = (char*)sqlite3_column_text(stmt, 1);
+
+                if (genero == NULL) {
+                    genero = "Desconocido";
+                }
+
+                memset(sendBuff, 0, 1024);
+                sprintf(sendBuff, "%s;%s", titulo, genero);
+                send(comm_socket, sendBuff, strlen(sendBuff), 0);
+
+                printf("DEBUG SERVIDOR: Enviando al cliente: %s - %s\n", titulo, genero);
+                Sleep(10);
+            }
+            sqlite3_finalize(stmt);
+        }
+    }    fflush(stdout);
 
 
+}
