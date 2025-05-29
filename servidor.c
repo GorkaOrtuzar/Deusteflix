@@ -491,7 +491,7 @@ int main(int argc, char *argv[]) {
                     memset(sendBuff, 0, sizeof(sendBuff));
                     memset(recvBuff, 0, sizeof(recvBuff));
                 }
-                break;
+                continue;
             }
 
             case '2': { // Menú usuario
@@ -693,7 +693,7 @@ int main(int argc, char *argv[]) {
                             break;
                     }
                 }
-                break;
+                continue;
             }
 
             case '0': // Salir del programa
